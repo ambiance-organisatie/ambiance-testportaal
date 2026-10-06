@@ -1,0 +1,650 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Solvaro Dealerportaal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Source+Sans+3:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: B2B-portaal — kopbalk, stappenbalk, formulier links, vaste samenvatting rechts (stapelt op mobiel) */
+:root{
+  --bg:#eef1f0; --surface:#ffffff; --surface-2:#f5f7f6; --line:#d3dad8; --fg:#1b2624; --muted:#5b6a67;
+  --accent:#0f5c52; --accent-ink:#ffffff; --accent-soft:#dcebe8; --canvas:#e0a536;
+  --err:#b42318; --err-soft:#fde8e6; --ok:#1d7a3e; --ok-soft:#e3f3e8; --warn:#8a5a00;
+  --f-display:"Barlow Semi Condensed","Arial Narrow",Arial,sans-serif;
+  --f-body:"Source Sans 3","Segoe UI",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#121816; --surface:#1a2220; --surface-2:#202a28; --line:#33403d; --fg:#e4ebe9; --muted:#9aaaa6;
+  --accent:#4fb5a5; --accent-ink:#0b1513; --accent-soft:#1d3632; --canvas:#e8b45a;
+  --err:#ff8a80; --err-soft:#3a1d1b; --ok:#6fd08f; --ok-soft:#173022; --warn:#f0c060; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121816; --surface:#1a2220; --surface-2:#202a28; --line:#33403d; --fg:#e4ebe9; --muted:#9aaaa6;
+  --accent:#4fb5a5; --accent-ink:#0b1513; --accent-soft:#1d3632; --canvas:#e8b45a;
+  --err:#ff8a80; --err-soft:#3a1d1b; --ok:#6fd08f; --ok-soft:#173022; --warn:#f0c060; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.45}
+.wrap{max-width:1240px;margin:0 auto;padding-inline:16px;padding-block:0 48px}
+header.top{background:var(--surface);border-bottom:1px solid var(--line);position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+.top-in{max-width:1240px;margin:0 auto;padding:10px 16px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--f-display);font-weight:700;font-size:22px;letter-spacing:.02em}
+.brand svg{flex:none}
+.brand small{font-family:var(--f-body);font-weight:500;font-size:12px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;display:block;margin-top:-4px}
+nav.tabs{display:flex;gap:4px;margin-left:auto;flex-wrap:wrap}
+nav.tabs button{font:600 14px var(--f-body);border:1px solid transparent;background:none;color:var(--muted);padding:8px 12px;border-radius:6px;cursor:pointer}
+nav.tabs button[aria-selected="true"]{background:var(--accent-soft);color:var(--fg);border-color:var(--line)}
+.dealer{font-size:13px;color:var(--muted);text-align:right}
+.dealer b{color:var(--fg);display:block;font-weight:600}
+.demo-band{background:repeating-linear-gradient(135deg,var(--canvas) 0 14px,transparent 14px 28px);height:5px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0}
+h1{font-size:28px;font-weight:700;margin-block:22px 4px}
+h2{font-size:21px;font-weight:600}
+h3{font-size:16px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--muted)}
+.lead{color:var(--muted);margin:0 0 18px;max-width:70ch}
+.steps{display:flex;gap:0;list-style:none;padding:0;margin:0 0 18px;border:1px solid var(--line);border-radius:8px;background:var(--surface);overflow-x:auto}
+.steps li{flex:1 0 auto}
+.steps button{width:100%;display:flex;gap:8px;align-items:center;padding:10px 14px;border:0;background:none;font:500 14px var(--f-body);color:var(--muted);cursor:pointer;white-space:nowrap;border-right:1px solid var(--line)}
+.steps li:last-child button{border-right:0}
+.steps .n{font:600 12px var(--f-mono);width:22px;height:22px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line)}
+.steps button[aria-current="step"]{color:var(--fg);background:var(--accent-soft)}
+.steps button[aria-current="step"] .n{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.steps button.done .n{background:var(--ok-soft);color:var(--ok);border-color:var(--ok)}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:20px;align-items:start}
+@media (max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:20px}
+.panel + .panel{margin-top:16px}
+fieldset{border:0;padding:0;margin:0}
+.fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px 18px;margin-top:14px}
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.field.wide{grid-column:1/-1}
+label,.lbl{font-weight:600;font-size:14px}
+.req::after{content:" *";color:var(--err)}
+.hint{font-size:12.5px;color:var(--muted)}
+input[type=text],input[type=number],input[type=email],input[type=tel],input[type=week],select,textarea{
+  font:inherit;color:var(--fg);background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:8px 10px;width:100%;min-width:0}
+textarea{min-height:70px;resize:vertical}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.unit{display:flex}
+.unit input{border-radius:6px 0 0 6px;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.unit span{border:1px solid var(--line);border-left:0;border-radius:0 6px 6px 0;padding:8px 10px;background:var(--surface);color:var(--muted);font:13px var(--f-mono)}
+.choices{display:flex;gap:8px;flex-wrap:wrap}
+.choice{display:flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:6px;padding:7px 11px;background:var(--surface-2);cursor:pointer;font-weight:500}
+.choice:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.prod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-top:14px}
+.prod{border:1px solid var(--line);border-radius:8px;padding:12px;cursor:pointer;background:var(--surface-2);display:flex;flex-direction:column;gap:6px}
+.prod:has(input:checked){border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:var(--accent-soft)}
+.prod input{position:absolute;opacity:0;pointer-events:none}
+.prod b{font-family:var(--f-display);font-size:17px;font-weight:600}
+.prod span{font-size:12.5px;color:var(--muted)}
+.prod code{font:11.5px var(--f-mono);color:var(--muted)}
+.swatch{display:inline-block;width:14px;height:14px;border-radius:3px;border:1px solid var(--line);vertical-align:-2px;margin-right:6px}
+.err-msg{color:var(--err);font-size:13px;font-weight:500}
+[aria-invalid="true"]{border-color:var(--err)!important;background:var(--err-soft)!important}
+.alert{border-radius:6px;padding:10px 12px;font-size:14px;margin-top:14px}
+.alert.err{background:var(--err-soft);color:var(--err);border:1px solid var(--err)}
+.alert.ok{background:var(--ok-soft);color:var(--ok);border:1px solid var(--ok)}
+.alert.info{background:var(--accent-soft);border:1px solid var(--line)}
+.actions{display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap;margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}
+.btn{font:600 15px var(--f-body);border-radius:6px;padding:9px 16px;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--fg)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.danger{color:var(--err)}
+.btn.sm{font-size:13px;padding:5px 10px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+aside .panel{position:sticky;top:84px}
+.sum dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;margin:12px 0;font-size:13.5px}
+.sum dt{color:var(--muted)}
+.sum dd{margin:0;text-align:right;overflow-wrap:anywhere}
+.price{border-top:1px solid var(--line);padding-top:10px;display:grid;grid-template-columns:1fr auto;gap:3px 10px;font-variant-numeric:tabular-nums;font-size:14px}
+.price .tot{font:700 20px var(--f-display)}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.tbl-wrap{overflow-x:auto;margin-top:12px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 12px var(--f-body);text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.pill{display:inline-block;font:600 12px var(--f-body);padding:2px 8px;border-radius:99px;background:var(--accent-soft)}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}
+.empty{color:var(--muted);padding:20px 0;text-align:center}
+.scen{display:grid;gap:12px;margin-top:14px}
+.scen article{border:1px solid var(--line);border-radius:8px;padding:14px;background:var(--surface-2)}
+.scen p{margin:6px 0 10px;max-width:80ch}
+.scen .tag{font:600 11px var(--f-mono);color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:6px;font-weight:600;z-index:20}
+@media (prefers-reduced-motion:no-preference){.btn,.prod,.choice{transition:background .15s,border-color .15s}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-in">
+    <div class="brand">
+      <svg width="34" height="28" viewBox="0 0 34 28" aria-hidden="true"><path d="M2 6h30l-4 10H6z" fill="var(--accent)"/><path d="M6 16h22v3H6z" fill="var(--canvas)"/><path d="M4 6 1 3M30 6l3-3" stroke="var(--muted)" stroke-width="2"/></svg>
+      <div>Solvaro<small>Dealerportaal · testomgeving</small></div>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="Hoofdmenu">
+      <button role="tab" id="tab-config" aria-selected="true" data-view="config">Nieuwe order</button>
+      <button role="tab" id="tab-cart" aria-selected="false" data-view="cart">Orderregels (<span id="cart-count">0</span>)</button>
+      <button role="tab" id="tab-orders" aria-selected="false" data-view="orders">Orderoverzicht</button>
+      <button role="tab" id="tab-scen" aria-selected="false" data-view="scen">Testscenario's</button>
+    </nav>
+    <div class="dealer"><b>Ambiance Testdealer</b>Debiteur 40-118 · demo</div>
+  </div>
+  <div class="demo-band" aria-hidden="true"></div>
+</header>
+
+<main class="wrap">
+
+<!-- ============ CONFIGURATOR ============ -->
+<section id="view-config">
+  <h1>Zonwering configureren</h1>
+  <p class="lead">Fictieve leverancier voor het testen van invulgedrag. Maten in millimeters. Velden met * zijn verplicht; elke stap wordt gecontroleerd voordat je verder kunt.</p>
+
+  <ol class="steps" id="steps">
+    <li><button type="button" data-step="0"><span class="n">1</span>Product</button></li>
+    <li><button type="button" data-step="1"><span class="n">2</span>Maten &amp; montage</button></li>
+    <li><button type="button" data-step="2"><span class="n">3</span>Kleur &amp; doek</button></li>
+    <li><button type="button" data-step="3"><span class="n">4</span>Bediening</button></li>
+    <li><button type="button" data-step="4"><span class="n">5</span>Opties</button></li>
+    <li><button type="button" data-step="5"><span class="n">6</span>Controle</button></li>
+  </ol>
+
+  <div class="grid">
+  <form id="cfg" novalidate autocomplete="off">
+
+    <!-- STAP 1 -->
+    <fieldset class="panel step" data-step="0">
+      <h2>1. Product kiezen</h2>
+      <div class="prod-grid" id="prod-grid" role="radiogroup" aria-label="Producttype"></div>
+      <div class="err-msg" id="err-product" hidden></div>
+      <div class="fields">
+        <div class="field"><label for="model" class="req">Model / uitvoering</label><select id="model" name="model"></select><span class="err-msg" hidden></span></div>
+        <div class="field"><label for="aantal" class="req">Aantal</label><input type="number" id="aantal" name="aantal" min="1" max="50" value="1"><span class="err-msg" hidden></span></div>
+        <div class="field"><label for="positie">Positie / ruimte</label><input type="text" id="positie" name="positie" placeholder="bijv. Achtergevel, terras"><span class="hint">Komt op het productielabel.</span></div>
+      </div>
+    </fieldset>
+
+    <!-- STAP 2 -->
+    <fieldset class="panel step" data-step="1" hidden>
+      <h2>2. Maten &amp; montage</h2>
+      <div class="fields">
+        <div class="field"><label for="breedte" class="req">Breedte</label><div class="unit"><input type="number" id="breedte" name="breedte" inputmode="numeric"><span>mm</span></div><span class="hint" id="hint-breedte"></span><span class="err-msg" hidden></span></div>
+        <div class="field"><label for="hoogte" class="req" id="lbl-hoogte">Hoogte</label><div class="unit"><input type="number" id="hoogte" name="hoogte" inputmode="numeric"><span>mm</span></div><span class="hint" id="hint-hoogte"></span><span class="err-msg" hidden></span></div>
+        <div class="field wide"><span class="lbl req">Opgegeven maat is</span>
+          <div class="choices" role="radiogroup" aria-label="Meetwijze">
+            <label class="choice"><input type="radio" name="meetwijze" id="meet-werk" value="Werkmaat (totaalmaat)"> Werkmaat (totaalmaat)</label>
+            <label class="choice"><input type="radio" name="meetwijze" id="meet-dag" value="Dagmaat (binnen de nis)"> Dagmaat (binnen de nis)</label>
+          </div><span class="err-msg" hidden></span></div>
+        <div class="field"><label for="montage" class="req">Montagewijze</label><select id="montage" name="montage"><option value="">— kies —</option><option>Wandmontage</option><option>Plafondmontage</option><option>Dakspantmontage</option><option>Nismontage</option></select><span class="err-msg" hidden></span></div>
+        <div class="field"><label for="ondergrond" class="req">Ondergrond</label><select id="ondergrond" name="ondergrond"><option value="">— kies —</option><option>Beton</option><option>Baksteen (massief)</option><option>Kalkzandsteen</option><option>Hout</option><option>Geïsoleerde gevel (ETICS)</option></select><span class="hint">Bij geïsoleerde gevel zijn afstandsconsoles verplicht.</span><span class="err-msg" hidden></span></div>
+        <div class="field"><label for="montagehoogte">Montagehoogte</label><div class="unit"><input type="number" id="montagehoogte" name="montagehoogte"><span>mm</span></div><span class="hint">Vanaf vloer tot onderkant console.</span></div>
+        <div class="field" data-for="knikarm"><label for="hellingshoek" class="req">Hellingshoek</label><select id="hellingshoek" name="hellingshoek"><option value="">— kies —</option><option>5°</option><option>10°</option><option>15°</option><option>20°</option><option>25°</option><option>30°</option><option>35°</option></select><span class="err-msg" hidden></span></div>
+        <div class="field" data-for="knikarm"><label for="consoles">Consoles</label><select id="consoles" name="consoles"><option>Standaard wandconsole</option><option>Plafondconsole</option><option>Dakspantbeugel</option><option>Afstandsconsole 80–200 mm</option></select><span class="err-msg" hidden></span></div>
+        <div class="field" data-for="screen"><label for="geleiding" class="req">Geleiding</label><select id="geleiding" name="geleiding"><option value="">— kies —</option><option>Zip-geleider (windvast)</option><option>Kabelgeleiding RVS</option><option>Stang­geleiding</option></select><span class="err-msg" hidden></span></div>
+        <div class="field" data-for="rolluik"><label for="kasttype" class="req">Kasttype</label><select id="kasttype" name="kasttype"><option value="">— kies —</option><option>Opbouwkast 45°</option><option>Opbouwkast rond</option><option>Inbouwkast (renovatie)</option></select><span class="err-msg" hidden></span></div>
+        <div class="field" data-for="rolluik"><label for="lamel" class="req">Lamel</label><select id="lamel" name="lamel"><option value="">— kies —</option><option>Aluminium 39 mm</option><option>Aluminium 42 mm geïsoleerd</option><option>Aluminium 55 mm geïsoleerd</option><option>Kunststof 37 mm</option></select><span class="err-msg" hidden></span></div>
+        <div class="field" data-for="uitval"><label for="armlengte" class="req">Armlengte</label><select id="armlengte" name="armlengte"><option value="">— kies —</option><option>600 mm</option><option>800 mm</option><option>1000 mm</option><option>1200 mm</option></select><span class="err-msg" hidden></span></div>
+        <div class="field" data-for="lamellendak"><label for="staanders" class="req">Aantal staanders</label><input type="number" id="staanders" name="staanders" min="0" max="6"><span class="hint">0 = volledig wandgedragen (max. diepte 3000 mm).</span><span class="err-msg" hidden></span></div>
+        <div class="field" data-for="lamellendak"><label for="goot" class="req">Afvoer hemelwater</label><select id="goot" name="goot"><option value="">— kies —</option><option>Via staander links</option><option>Via staander rechts</option><option>Via beide staanders</option></select><span class="err-msg" hidden></span></div>
+      </div>
+    </fieldset>
+
+    <!-- STAP 3 -->
+    <fieldset class="panel step" data-step="2" hidden>
+      <h2>3. Kleur &amp; doek</h2>
+      <div class="fields">
+        <div class="field"><label for="framekleur" class="req">Framekleur</label><select id="framekleur" name="framekleur"></select><span class="err-msg" hidden></span></div>
+        <div class="field" id="wrap-ral" hidden><label for="ral" class="req">Afwijkende RAL-code</label><input type="text" id="ral" name="ral" placeholder="RAL 7039" maxlength="8"><span class="hint">Formaat: RAL + 4 cijfers. Meerprijs 12%.</span><span class="err-msg" hidden></span></div>
+        <div class="field wide"><span class="lbl req">Afwerking</span>
+          <div class="choices" role="radiogroup" aria-label="Afwerking">
+            <label class="choice"><input type="radio" name="afwerking" id="afw-mat" value="Mat"> Mat</label>
+            <label class="choice"><input type="radio" name="afwerking" id="afw-glans" value="Glans"> Glans</label>
+            <label class="choice"><input type="radio" name="afwerking" id="afw-struct" value="Fijnstructuur"> Fijnstructuur</label>
+          </div><span class="err-msg" hidden></span></div>
+        <div class="field" data-for="knikarm screen uitval markies"><label for="collectie" class="req">Doekcollectie</label><select id="collectie" name="collectie"></select><span class="err-msg" hidden></span></div>
+        <div class="field" data-for="knikarm screen uitval markies"><label for="doeknr" class="req">Doeknummer</label><input type="text" id="doeknr" name="doeknr" placeholder="bijv. TA-3145"><span class="hint" id="hint-doeknr">Zie stalenboek.</span><span class="err-msg" hidden></span></div>
+        <div class="field" data-for="knikarm markies"><label for="volant" class="req">Volant</label><select id="volant" name="volant"><option value="">— kies —</option><option>Geen volant</option><option>Recht</option><option>Golf</option><option>Schulp</option></select><span class="err-msg" hidden></span></div>
+        <div class="field" data-for="knikarm markies" id="wrap-volanth"><label for="volanthoogte">Volanthoogte</label><select id="volanthoogte" name="volanthoogte"><option>200 mm</option><option>250 mm</option><option>300 mm</option></select></div>
+        <div class="field" data-for="rolluik"><label for="lamelkleur" class="req">Lamelkleur</label><select id="lamelkleur" name="lamelkleur"><option value="">— kies —</option><option>Wit (RAL 9016)</option><option>Crème (RAL 1013)</option><option>Antraciet (RAL 7016)</option><option>Zilver (RAL 9006)</option><option>Zwart (RAL 9005)</option><option>Gelijk aan framekleur</option></select><span class="err-msg" hidden></span></div>
+        <div class="field" data-for="lamellendak"><label for="lamelkleur2" class="req">Kleur lamellen</label><select id="lamelkleur2" name="lamelkleur2"><option value="">— kies —</option><option>Gelijk aan frame</option><option>Wit (RAL 9016)</option><option>Antraciet (RAL 7016)</option></select><span class="err-msg" hidden></span></div>
+      </div>
+    </fieldset>
+
+    <!-- STAP 4 -->
+    <fieldset class="panel step" data-step="3" hidden>
+      <h2>4. Bediening</h2>
+      <div class="fields">
+        <div class="field"><label for="bediening" class="req">Bediening</label><select id="bediening" name="bediening"></select><span class="err-msg" hidden></span></div>
+        <div class="field wide"><span class="lbl req">Bedieningszijde (van buiten gezien)</span>
+          <div class="choices" role="radiogroup" aria-label="Bedieningszijde">
+            <label class="choice"><input type="radio" name="zijde" id="zijde-l" value="Links"> Links</label>
+            <label class="choice"><input type="radio" name="zijde" id="zijde-r" value="Rechts"> Rechts</label>
+          </div><span class="err-msg" hidden></span></div>
+        <div class="field" data-op="hand"><label for="slinger" class="req">Lengte slinger / band</label><div class="unit"><input type="number" id="slinger" name="slinger" min="800" max="2500"><span>mm</span></div><span class="hint">800 – 2500 mm.</span><span class="err-msg" hidden></span></div>
+        <div class="field" data-op="motor"><label for="motortype" class="req">Motortype</label><select id="motortype" name="motortype"><option value="">— kies —</option><option>Standaard</option><option>Stil (≤ 38 dB)</option><option>Met handnoodbediening</option></select><span class="err-msg" hidden></span></div>
+        <div class="field" data-op="motor"><label for="kabeluitgang" class="req">Kabeluitgang</label><select id="kabeluitgang" name="kabeluitgang"><option value="">— kies —</option><option>Links</option><option>Rechts</option><option>Achterzijde</option><option>Bovenzijde</option></select><span class="err-msg" hidden></span></div>
+        <div class="field" data-op="motor"><label for="kabellengte" class="req">Kabellengte</label><select id="kabellengte" name="kabellengte"><option value="">— kies —</option><option>1,5 m</option><option>3 m</option><option>5 m</option><option>10 m</option></select><span class="err-msg" hidden></span></div>
+        <div class="field" data-op="motor"><label for="kabeltype" class="req">Kabel / aansluiting</label><select id="kabeltype" name="kabeltype"><option value="">— kies —</option><option>Losse aders (4-aderig)</option><option>Losse aders (3-aderig)</option><option>Met 3-polige stekker</option><option>Met schuko-stekker (alleen binnen)</option></select><span class="err-msg" hidden></span></div>
+        <div class="field" data-op="wired"><label for="schakelaar" class="req">Schakelaar</label><select id="schakelaar" name="schakelaar"><option value="">— kies —</option><option>Geen (klant regelt zelf)</option><option>Inbouw tuimelschakelaar</option><option>Opbouw tuimelschakelaar</option><option>Sleutelschakelaar</option></select><span class="err-msg" hidden></span></div>
+        <div class="field" data-op="radio"><label for="zender" class="req">Afstandsbediening</label><select id="zender" name="zender"><option value="">— kies —</option><option>Geen (bestaande zender)</option><option>Handzender 1-kanaals</option><option>Handzender 5-kanaals</option><option>Handzender 16-kanaals met timer</option><option>Wandzender 1-kanaals</option></select><span class="err-msg" hidden></span></div>
+        <div class="field" data-op="radio"><label for="kanaal">Kanaal op zender</label><input type="number" id="kanaal" name="kanaal" min="1" max="16"><span class="hint">Leeg laten = niet voorprogrammeren.</span><span class="err-msg" hidden></span></div>
+        <div class="field" data-op="radio"><label for="smarthome">Smart-home koppeling</label><select id="smarthome" name="smarthome"><option>Geen</option><option>Solvaro Connect hub</option><option>Hub + app-licentie</option></select></div>
+      </div>
+      <div class="alert info" id="bed-info" hidden></div>
+    </fieldset>
+
+    <!-- STAP 5 -->
+    <fieldset class="panel step" data-step="4" hidden>
+      <h2>5. Opties &amp; sensoren</h2>
+      <div class="fields">
+        <div class="field wide"><span class="lbl">Sensoren</span>
+          <div class="choices">
+            <label class="choice"><input type="checkbox" id="s-wind" name="sensoren" value="Windsensor"> Windsensor</label>
+            <label class="choice"><input type="checkbox" id="s-zonwind" name="sensoren" value="Zon-/windsensor"> Zon-/windsensor</label>
+            <label class="choice"><input type="checkbox" id="s-trilling" name="sensoren" value="Trillingssensor"> Trillingssensor</label>
+            <label class="choice"><input type="checkbox" id="s-regen" name="sensoren" value="Regensensor"> Regensensor</label>
+          </div><span class="hint">Sensoren werken alleen met radiografische motor.</span><span class="err-msg" hidden></span></div>
+        <div class="field" data-for="knikarm lamellendak"><label for="led">LED-verlichting</label><select id="led" name="led"><option>Geen</option><option>LED in armen (warm wit)</option><option>LED in cassette (dimbaar)</option><option>LED RGB + wit</option></select><span class="err-msg" hidden></span></div>
+        <div class="field" data-for="knikarm lamellendak"><label for="heater">Terrasverwarming</label><select id="heater" name="heater"><option>Geen</option><option>1× 2000 W infrarood</option><option>2× 2000 W infrarood</option></select></div>
+        <div class="field" data-for="knikarm"><label for="kap">Beschermkap</label><select id="kap" name="kap"><option>Niet nodig (cassette)</option><option>Aluminium kap</option><option>Aluminium kap met zijkappen</option></select></div>
+        <div class="field" data-for="screen rolluik"><label for="insect">Insectenwering</label><select id="insect" name="insect"><option>Geen</option><option>Geïntegreerd hor</option></select></div>
+        <div class="field" data-for="lamellendak"><label for="zijwand">Zijwanden</label><select id="zijwand" name="zijwand"><option>Geen</option><option>Screen zijwand links</option><option>Screen zijwand rechts</option><option>Screen zijwand beide zijden</option><option>Glazen schuifwand voorzijde</option></select></div>
+        <div class="field"><label for="levering" class="req">Levering</label><select id="levering" name="levering"><option value="">— kies —</option><option>Gemonteerd geleverd (compleet)</option><option>Doek en frame los</option><option>Ombouwset (alleen doek)</option></select><span class="err-msg" hidden></span></div>
+        <div class="field"><label for="garantie">Garantie</label><select id="garantie" name="garantie"><option>Standaard 5 jaar</option><option>Verlengd 7 jaar (+4%)</option></select></div>
+        <div class="field wide"><label for="opmerking">Opmerking voor productie</label><textarea id="opmerking" name="opmerking" maxlength="300" placeholder="Max. 300 tekens"></textarea><span class="hint"><span id="opm-count">0</span>/300</span></div>
+      </div>
+    </fieldset>
+
+    <!-- STAP 6 -->
+    <fieldset class="panel step" data-step="5" hidden>
+      <h2>6. Controle</h2>
+      <p class="lead" style="margin-top:8px">Controleer de regel. Gebruik de stappenbalk om iets aan te passen.</p>
+      <div class="tbl-wrap"><table id="review"><tbody></tbody></table></div>
+      <label class="choice" style="margin-top:14px;width:fit-content"><input type="checkbox" id="maten-akkoord"> Maten zijn ingemeten en gecontroleerd</label>
+      <span class="err-msg" id="err-akkoord" hidden></span>
+    </fieldset>
+
+    <div class="alert err" id="step-alert" hidden role="alert"></div>
+    <div class="actions">
+      <button type="button" class="btn" id="btn-prev">Vorige</button>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button type="button" class="btn danger" id="btn-reset">Formulier wissen</button>
+        <button type="button" class="btn primary" id="btn-next">Volgende</button>
+        <button type="button" class="btn primary" id="btn-add" hidden>Toevoegen aan order</button>
+      </div>
+    </div>
+  </form>
+
+  <aside>
+    <div class="panel sum">
+      <h3>Samenvatting regel</h3>
+      <dl id="sum-list"></dl>
+      <div class="price">
+        <span>Bruto</span><span class="mono" id="p-bruto">€ 0,00</span>
+        <span>Dealerkorting 35%</span><span class="mono" id="p-korting">− € 0,00</span>
+        <span class="tot">Netto</span><span class="tot mono" id="p-netto">€ 0,00</span>
+      </div>
+      <p class="hint" style="margin:10px 0 0">Prijzen fictief, excl. btw. Netto per regel × aantal.</p>
+    </div>
+  </aside>
+  </div>
+</section>
+
+<!-- ============ ORDERREGELS ============ -->
+<section id="view-cart" hidden>
+  <h1>Orderregels</h1>
+  <p class="lead">Regels die nog niet besteld zijn. Vul de ordergegevens in om de order te plaatsen.</p>
+  <div class="panel">
+    <div class="tbl-wrap"><table id="cart-tbl">
+      <thead><tr><th>#</th><th>Product</th><th>Maat (b × h)</th><th>Kleur</th><th>Bediening</th><th class="num">Aantal</th><th class="num">Netto</th><th></th></tr></thead>
+      <tbody></tbody>
+      <tfoot><tr><td colspan="6"><b>Totaal netto excl. btw</b></td><td class="num mono"><b id="cart-total">€ 0,00</b></td><td></td></tr></tfoot>
+    </table></div>
+  </div>
+
+  <form class="panel" id="order-form" novalidate autocomplete="off">
+    <h2>Ordergegevens</h2>
+    <div class="fields">
+      <div class="field"><label for="o-ref" class="req">Uw referentie</label><input type="text" id="o-ref" name="o-ref" maxlength="30" placeholder="bijv. Jansen achtergevel"><span class="err-msg" hidden></span></div>
+      <div class="field"><label for="o-klant" class="req">Naam eindklant</label><input type="text" id="o-klant" name="o-klant"><span class="err-msg" hidden></span></div>
+      <div class="field"><label for="o-tel">Telefoon eindklant</label><input type="tel" id="o-tel" name="o-tel" placeholder="06 12345678"><span class="err-msg" hidden></span></div>
+      <div class="field wide"><span class="lbl req">Levering</span>
+        <div class="choices">
+          <label class="choice"><input type="radio" name="o-lev" id="o-lev-dealer" value="Bezorgen bij dealer"> Bezorgen bij dealer</label>
+          <label class="choice"><input type="radio" name="o-lev" id="o-lev-klant" value="Bezorgen bij eindklant"> Bezorgen bij eindklant</label>
+          <label class="choice"><input type="radio" name="o-lev" id="o-lev-afhalen" value="Afhalen Tilburg"> Afhalen Tilburg</label>
+        </div><span class="err-msg" hidden></span></div>
+      <div class="field" data-adres><label for="o-straat" class="req">Straat</label><input type="text" id="o-straat" name="o-straat"><span class="err-msg" hidden></span></div>
+      <div class="field" data-adres><label for="o-huisnr" class="req">Huisnummer</label><input type="text" id="o-huisnr" name="o-huisnr"><span class="err-msg" hidden></span></div>
+      <div class="field" data-adres><label for="o-postcode" class="req">Postcode</label><input type="text" id="o-postcode" name="o-postcode" placeholder="1234 AB" maxlength="7"><span class="err-msg" hidden></span></div>
+      <div class="field" data-adres><label for="o-plaats" class="req">Plaats</label><input type="text" id="o-plaats" name="o-plaats"><span class="err-msg" hidden></span></div>
+      <div class="field"><label for="o-week" class="req">Gewenste leverweek</label><input type="week" id="o-week" name="o-week"><span class="hint">Levertijd minimaal 3 weken.</span><span class="err-msg" hidden></span></div>
+      <div class="field"><label for="o-email">Orderbevestiging naar</label><input type="email" id="o-email" name="o-email" placeholder="inkoop@dealer.nl"><span class="err-msg" hidden></span></div>
+      <div class="field wide"><label for="o-opm">Opmerking bij order</label><textarea id="o-opm" name="o-opm"></textarea></div>
+      <div class="field wide"><label class="choice" style="width:fit-content"><input type="checkbox" id="o-akkoord"> Ik ga akkoord met de leveringsvoorwaarden</label><span class="err-msg" hidden></span></div>
+    </div>
+    <div class="alert err" id="order-alert" hidden role="alert"></div>
+    <div class="actions"><button type="button" class="btn" data-goto="config">Regel toevoegen</button><button type="submit" class="btn primary" id="btn-place">Order plaatsen</button></div>
+  </form>
+  <div class="alert ok" id="order-done" hidden role="status"></div>
+</section>
+
+<!-- ============ ORDEROVERZICHT ============ -->
+<section id="view-orders" hidden>
+  <h1>Orderoverzicht</h1>
+  <p class="lead">Geplaatste testorders, alleen opgeslagen in deze browser.</p>
+  <div class="panel">
+    <div class="tbl-wrap"><table id="orders-tbl">
+      <thead><tr><th>Ordernr.</th><th>Datum</th><th>Referentie</th><th>Eindklant</th><th>Levering</th><th>Week</th><th class="num">Regels</th><th class="num">Netto</th><th>Status</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+    <div class="actions"><span class="hint">Orders worden niet echt verstuurd.</span><button type="button" class="btn danger sm" id="btn-clear-orders">Alle testorders verwijderen</button></div>
+  </div>
+  <div class="panel" id="order-detail" hidden></div>
+</section>
+
+<!-- ============ SCENARIO'S ============ -->
+<section id="view-scen" hidden>
+  <h1>Testscenario's</h1>
+  <p class="lead">Opdrachten om aan een agent te geven. Kopieer de tekst en controleer daarna in het orderoverzicht of alles klopt. Scenario's 4 en 5 bevatten bewust fouten die het portaal moet afvangen.</p>
+  <div class="scen" id="scen-list"></div>
+</section>
+</main>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const PRODUCTS = {
+  knikarm:{name:'Knikarmscherm',code:'KA',desc:'Terrasscherm met knikarmen',hLabel:'Uitval',b:[1800,7000],h:[1500,4000],m2:95,base:640,
+    models:['Cassette Pro (volledig gesloten)','Semi-cassette','Open model'],bed:['hand','wired','radio','radioTB']},
+  screen:{name:'Screen',code:'SC',desc:'Verticaal doekscherm',hLabel:'Hoogte',b:[600,6000],h:[600,5000],m2:110,base:320,
+    models:['Zip 95','Zip 110','Zip 130 (grote maten)'],bed:['hand','wired','radio','radioTB','solar'],maxM2:18},
+  rolluik:{name:'Rolluik',code:'RL',desc:'Aluminium voorzetrolluik',hLabel:'Hoogte',b:[400,4500],h:[400,3500],m2:120,base:180,
+    models:['Voorzet­rolluik','Inbouw­rolluik','Rolluik met hor'],bed:['hand','wired','radio','radioTB','solar']},
+  uitval:{name:'Uitvalscherm',code:'UV',desc:'Raamscherm met uitvalarmen',hLabel:'Hoogte',b:[600,4000],h:[600,3000],m2:85,base:210,
+    models:['Uitval Basic','Uitval Cassette'],bed:['hand','wired','radio','radioTB']},
+  markies:{name:'Markies',code:'MK',desc:'Klassieke korfmarkies',hLabel:'Uitval',b:[600,5000],h:[400,1200],m2:140,base:260,
+    models:['Markies 3 baleinen','Markies 4 baleinen','Markies 5 baleinen'],bed:['hand','wired','radio']},
+  lamellendak:{name:'Lamellendak',code:'LD',desc:'Terrasoverkapping met kantelbare lamellen',hLabel:'Diepte',b:[2000,6000],h:[2000,5000],m2:520,base:1900,
+    models:['Lamellendak Vrijstaand','Lamellendak Wandmontage'],bed:['wired','radio','radioTB']},
+};
+const BED = {hand:'Handbediening (slinger/band)',wired:'Motor bedraad (schakelaar)',radio:'Motor radiografisch',radioTB:'Motor radiografisch met terugmelding',solar:'Solarmotor (accu + paneel)'};
+const KLEUREN = [['RAL 9016 Verkeerswit','#f1f0ea'],['RAL 9010 Zuiver wit','#f1ece1'],['RAL 1013 Parelwit (crème)','#e3d9c6'],['RAL 7016 Antracietgrijs','#383e42'],['RAL 7021 Zwartgrijs','#2f3234'],['RAL 9005 Gitzwart','#0e0e10'],['RAL 9006 Blank aluminium','#a1a1a0'],['RAL 9007 Grijs aluminium','#878581'],['RAL 7039 Kwartsgrijs','#6b665e'],['Afwijkende RAL','']];
+const COLLECTIES = {
+  default:[['Tentura Acryl Uni','TA-',3],['Tentura Acryl Streep','TS-',3],['Tentura Polyester Coated','TP-',2]],
+  screen:[['Veloscreen 3% open','V3-',2],['Veloscreen 5% open','V5-',2],['Veloscreen 10% open','V10-',2],['Opaque verduisterend','OP-',4]],
+};
+const $ = s=>document.querySelector(s), $$ = s=>[...document.querySelectorAll(s)];
+const eur = n=>'€ '+n.toLocaleString('nl-NL',{minimumFractionDigits:2,maximumFractionDigits:2});
+let step=0, cart=[], orders=[], editIdx=null;
+try{ orders=JSON.parse(localStorage.getItem('slv-orders')||'[]'); cart=JSON.parse(localStorage.getItem('slv-cart')||'[]'); }catch(e){}
+const save=()=>{try{localStorage.setItem('slv-orders',JSON.stringify(orders));localStorage.setItem('slv-cart',JSON.stringify(cart));}catch(e){}};
+
+// product cards
+$('#prod-grid').innerHTML = Object.entries(PRODUCTS).map(([k,p])=>`<label class="prod" for="prod-${k}"><input type="radio" name="product" id="prod-${k}" value="${k}"><b>${p.name}</b><span>${p.desc}</span><code>${p.b[0]}–${p.b[1]} × ${p.h[0]}–${p.h[1]} mm</code></label>`).join('');
+$('#framekleur').innerHTML = '<option value="">— kies —</option>'+KLEUREN.map(([n])=>`<option>${n}</option>`).join('');
+
+const prod = ()=>{const r=$('input[name=product]:checked');return r?r.value:null};
+const val = id=>{const el=document.getElementById(id);return el?el.value.trim():''};
+const radio = n=>{const r=$(`input[name="${n}"]:checked`);return r?r.value:''};
+function bedKind(v){ if(!v) return ''; if(v===BED.hand) return 'hand'; if(v===BED.wired) return 'wired'; if(v===BED.solar) return 'solar'; return 'radio'; }
+
+function onProductChange(){
+  const p=prod(); if(!p) return;
+  const P=PRODUCTS[p];
+  const keepModel=$('#model').value;
+  $('#model').innerHTML='<option value="">— kies —</option>'+P.models.map(m=>`<option>${m}</option>`).join('');
+  if(P.models.includes(keepModel)) $('#model').value=keepModel;
+  $('#lbl-hoogte').textContent=P.hLabel;
+  $('#hint-breedte').textContent=`${P.b[0]} – ${P.b[1]} mm`;
+  $('#hint-hoogte').textContent=`${P.h[0]} – ${P.h[1]} mm`+(P.maxM2?` · max. ${P.maxM2} m²`:'');
+  const col=(p==='screen'?COLLECTIES.screen:COLLECTIES.default);
+  const keepCol=$('#collectie').value;
+  $('#collectie').innerHTML='<option value="">— kies —</option>'+col.map(c=>`<option>${c[0]}</option>`).join('');
+  if(col.some(c=>c[0]===keepCol)) $('#collectie').value=keepCol;
+  const keepBed=$('#bediening').value;
+  $('#bediening').innerHTML='<option value="">— kies —</option>'+P.bed.map(b=>`<option>${BED[b]}</option>`).join('');
+  if(P.bed.some(b=>BED[b]===keepBed)) $('#bediening').value=keepBed;
+  refresh();
+}
+function refresh(){
+  const p=prod();
+  $$('[data-for]').forEach(el=>{el.hidden=!p||!el.dataset.for.split(' ').includes(p)});
+  const k=bedKind($('#bediening').value);
+  $$('[data-op]').forEach(el=>{const o=el.dataset.op; el.hidden = !(o===k || (o==='motor' && ['wired','radio'].includes(k)) || (o==='radio'&&k==='radio'));});
+  $('#wrap-ral').hidden = $('#framekleur').value!=='Afwijkende RAL';
+  if(p==='knikarm'||p==='markies') $('#wrap-volanth').hidden = ['','Geen volant'].includes($('#volant').value);
+  const col=[...COLLECTIES.default,...COLLECTIES.screen].find(c=>c[0]===$('#collectie').value);
+  $('#hint-doeknr').textContent = col?`Formaat: ${col[1]} gevolgd door 4 cijfers, bijv. ${col[1]}${String(1000+col[2]*731).slice(0,4)}`:'Kies eerst een collectie.';
+  const info=$('#bed-info');
+  if(k==='solar'){info.hidden=false;info.textContent='Solarmotor: geen kabel nodig. Max. breedte 2500 mm. Zender 1-kanaals wordt standaard meegeleverd.';}
+  else if(k==='hand' && p==='rolluik'){info.hidden=false;info.textContent='Handbediening bij rolluiken tot max. 6 m².';}
+  else info.hidden=true;
+  $('#opm-count').textContent=$('#opmerking').value.length;
+  summary();
+}
+
+function data(){
+  const p=prod(); const P=p?PRODUCTS[p]:null;
+  const d={product:p, productNaam:P?P.name:'', model:val('model'), aantal:+val('aantal')||0, positie:val('positie'),
+    breedte:+val('breedte')||0, hoogte:+val('hoogte')||0, hLabel:P?P.hLabel:'Hoogte', meetwijze:radio('meetwijze'), montage:val('montage'), ondergrond:val('ondergrond'), montagehoogte:val('montagehoogte'),
+    framekleur:val('framekleur')==='Afwijkende RAL'?val('ral').toUpperCase():val('framekleur'), afwerking:radio('afwerking'),
+    bediening:val('bediening'), zijde:radio('zijde'), sensoren:$$('input[name=sensoren]:checked').map(c=>c.value),
+    levering:val('levering'), garantie:val('garantie'), opmerking:val('opmerking'), extra:{}};
+  $$('[data-for]:not([hidden]) select, [data-for]:not([hidden]) input, [data-op]:not([hidden]) select, [data-op]:not([hidden]) input').forEach(el=>{
+    const lab=document.querySelector(`label[for="${el.id}"]`); if(el.value) d.extra[lab?lab.textContent.trim():el.id]=el.value+(el.type==='number'&&['slinger'].includes(el.id)?' mm':'');
+  });
+  return d;
+}
+function price(d){
+  if(!d.product||!d.breedte||!d.hoogte) return 0;
+  const P=PRODUCTS[d.product]; const m2=(d.breedte/1000)*(d.hoogte/1000);
+  let p=P.base+m2*P.m2;
+  const k=bedKind(d.bediening);
+  p+={hand:0,wired:285,radio:395,solar:540}[k]||0; if(d.bediening===BED.radioTB) p+=95;
+  const z=val('zender'); p+= z.includes('16')?165:z.includes('5-')?95:z.includes('1-')?59:0;
+  p+=d.sensoren.length*119;
+  const led=val('led'); if(led && led!=='Geen' && !$('#led').closest('[hidden]')) p+= led.includes('RGB')?620:led.includes('cassette')?440:360;
+  const h=val('heater'); if(h.startsWith('1')&&!$('#heater').closest('[hidden]'))p+=410; if(h.startsWith('2')&&!$('#heater').closest('[hidden]'))p+=790;
+  if(val('framekleur')==='Afwijkende RAL') p*=1.12;
+  if(d.garantie.includes('7')) p*=1.04;
+  return Math.round(p*100)/100;
+}
+function summary(){
+  const d=data(); const rows=[];
+  rows.push(['Product',d.productNaam||'—'],['Model',d.model||'—'],['Maat',d.breedte&&d.hoogte?`${d.breedte} × ${d.hoogte} mm`:'—'],['Kleur',d.framekleur||'—'],['Bediening',d.bediening?d.bediening.replace('Motor ',''):'—'],['Zijde',d.zijde||'—'],['Aantal',d.aantal||'—']);
+  $('#sum-list').innerHTML=rows.map(([a,b])=>`<dt>${a}</dt><dd>${esc(String(b))}</dd>`).join('');
+  const br=price(d)*(d.aantal||1);
+  $('#p-bruto').textContent=eur(br); $('#p-korting').textContent='− '+eur(br*.35); $('#p-netto').textContent=eur(br*.65);
+}
+const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+// ---------- validatie ----------
+function setErr(el,msg){
+  const f=el.closest('.field'); const m=f?f.querySelector('.err-msg'):null;
+  if(el.matches('input,select,textarea')) el.setAttribute('aria-invalid',msg?'true':'false');
+  if(m){m.hidden=!msg;m.textContent=msg||'';}
+}
+function clearErrs(scope){ scope.querySelectorAll('[aria-invalid]').forEach(e=>e.removeAttribute('aria-invalid')); scope.querySelectorAll('.err-msg').forEach(m=>{m.hidden=true;m.textContent=''}); }
+function validate(s){
+  const panel=$(`.step[data-step="${s}"]`); clearErrs(panel); const errs=[];
+  const need=(id,msg)=>{const el=document.getElementById(id); if(el.closest('[hidden]'))return; if(!el.value.trim()){setErr(el,msg||'Verplicht veld.');errs.push(msg||id);}};
+  const needRadio=(name,msg)=>{const first=$(`input[name="${name}"]`); if(!radio(name)){const m=first.closest('.field').querySelector('.err-msg'); m.hidden=false;m.textContent=msg;errs.push(msg);}};
+  const p=prod(), P=p&&PRODUCTS[p], d=data();
+  if(s===0){
+    if(!p){$('#err-product').hidden=false;$('#err-product').textContent='Kies een producttype.';errs.push('product');}
+    need('model','Kies een model.');
+    const a=+val('aantal'); if(!(a>=1&&a<=50)){setErr($('#aantal'),'Aantal moet tussen 1 en 50 liggen.');errs.push('aantal');}
+  }
+  if(s===1&&P){
+    const b=+val('breedte'),h=+val('hoogte');
+    if(!val('breedte')){setErr($('#breedte'),'Vul de breedte in.');errs.push('b');}
+    else if(b<P.b[0]||b>P.b[1]){setErr($('#breedte'),`Breedte moet tussen ${P.b[0]} en ${P.b[1]} mm liggen.`);errs.push('b');}
+    if(!val('hoogte')){setErr($('#hoogte'),`Vul de ${P.hLabel.toLowerCase()} in.`);errs.push('h');}
+    else if(h<P.h[0]||h>P.h[1]){setErr($('#hoogte'),`${P.hLabel} moet tussen ${P.h[0]} en ${P.h[1]} mm liggen.`);errs.push('h');}
+    if(!errs.length){
+      if(p==='knikarm'&&b<h+300){setErr($('#breedte'),`Bij een uitval van ${h} mm is de minimale breedte ${h+300} mm.`);errs.push('b');}
+      if(P.maxM2&&(b*h/1e6)>P.maxM2){setErr($('#hoogte'),`Oppervlak ${(b*h/1e6).toFixed(2).replace('.',',')} m² is groter dan het maximum van ${P.maxM2} m².`);errs.push('m2');}
+      if(p==='lamellendak'&&val('staanders')==='0'&&h>3000){setErr($('#staanders'),'Zonder staanders is de maximale diepte 3000 mm.');errs.push('st');}
+    }
+    needRadio('meetwijze','Geef aan of dit een werkmaat of dagmaat is.');
+    need('montage','Kies een montagewijze.'); need('ondergrond','Kies de ondergrond.');
+    if(p==='lamellendak'&&val('montage')==='Nismontage'){setErr($('#montage'),'Nismontage is niet mogelijk voor een lamellendak.');errs.push('m');}
+    if(p==='knikarm'&&val('ondergrond').startsWith('Geïsoleerde')&&!val('consoles').startsWith('Afstand')){setErr($('#consoles'),'Bij een geïsoleerde gevel is een afstandsconsole verplicht.');errs.push('c');}
+    ['hellingshoek','geleiding','kasttype','lamel','armlengte','goot'].forEach(id=>need(id,'Maak een keuze.'));
+    if(p==='lamellendak'){const s2=val('staanders'); if(s2===''||+s2<0||+s2>6){setErr($('#staanders'),'Vul 0 t/m 6 in.');errs.push('st');}}
+  }
+  if(s===2&&P){
+    need('framekleur','Kies een framekleur.');
+    if(val('framekleur')==='Afwijkende RAL' && !/^RAL ?\d{4}$/i.test(val('ral'))){setErr($('#ral'),'Gebruik het formaat RAL 1234.');errs.push('ral');}
+    needRadio('afwerking','Kies een afwerking.');
+    need('collectie','Kies een doekcollectie.');
+    if(!$('#doeknr').closest('[hidden]')){
+      const col=[...COLLECTIES.default,...COLLECTIES.screen].find(c=>c[0]===val('collectie'));
+      if(!val('doeknr')){setErr($('#doeknr'),'Vul het doeknummer in.');errs.push('dn');}
+      else if(col && !new RegExp('^'+col[1].replace('-','\\-')+'\\d{4}$','i').test(val('doeknr'))){setErr($('#doeknr'),`Doeknummer hoort bij ${col[0]} te beginnen met ${col[1]} gevolgd door 4 cijfers.`);errs.push('dn');}
+    }
+    ['volant','lamelkleur','lamelkleur2'].forEach(id=>need(id,'Maak een keuze.'));
+  }
+  if(s===3&&P){
+    need('bediening','Kies een bediening.'); needRadio('zijde','Kies de bedieningszijde.');
+    const k=bedKind(val('bediening'));
+    if(k==='hand'){const sl=+val('slinger'); if(!(sl>=800&&sl<=2500)){setErr($('#slinger'),'Lengte moet tussen 800 en 2500 mm liggen.');errs.push('sl');}
+      if(p==='rolluik'&&d.breedte*d.hoogte/1e6>6){setErr($('#bediening'),'Rolluik groter dan 6 m² kan niet met handbediening.');errs.push('hand');}
+      if(p==='knikarm'&&d.breedte>5000){setErr($('#bediening'),'Knikarmscherm breder dan 5000 mm vereist een motor.');errs.push('hand');}}
+    if(k==='solar'&&d.breedte>2500){setErr($('#bediening'),'Solarmotor is mogelijk tot 2500 mm breed.');errs.push('solar');}
+    ['motortype','kabeluitgang','kabellengte','kabeltype','schakelaar','zender'].forEach(id=>need(id,'Maak een keuze.'));
+    if(val('kabeltype').startsWith('Met schuko')){setErr($('#kabeltype'),'Schuko-stekker is niet toegestaan bij buitenzonwering.');errs.push('schuko');}
+    const ka=val('kanaal'); if(ka&&!$('#kanaal').closest('[hidden]')){const max=val('zender').includes('16')?16:val('zender').includes('5-')?5:1; if(+ka<1||+ka>max){setErr($('#kanaal'),`Deze zender heeft ${max} kana${max>1?'len':'al'}.`);errs.push('ka');}}
+    if(val('kabeluitgang')&&radio('zijde')&&['Links','Rechts'].includes(val('kabeluitgang'))&&val('kabeluitgang')!==radio('zijde')&&k!=='hand'){
+      // alleen een waarschuwing
+    }
+  }
+  if(s===4&&P){
+    const k=bedKind(val('bediening'));
+    if(d.sensoren.length&&k!=='radio'){const m=$('#s-wind').closest('.field').querySelector('.err-msg');m.hidden=false;m.textContent='Sensoren vereisen een radiografische motor. Pas de bediening aan in stap 4 of vink de sensoren uit.';errs.push('sens');}
+    if(d.sensoren.includes('Regensensor')&&p!=='lamellendak'){const m=$('#s-wind').closest('.field').querySelector('.err-msg');m.hidden=false;m.textContent='Een regensensor is alleen leverbaar bij een lamellendak.';errs.push('regen');}
+    if(p==='knikarm'&&val('led').includes('cassette')&&!val('model').startsWith('Cassette')){setErr($('#led'),'LED in cassette kan alleen bij het model Cassette Pro.');errs.push('led');}
+    need('levering','Kies de leverwijze.');
+  }
+  if(s===5){ if(!$('#maten-akkoord').checked){$('#err-akkoord').hidden=false;$('#err-akkoord').textContent='Bevestig dat de maten zijn gecontroleerd.';errs.push('akk');} }
+  const al=$('#step-alert');
+  if(errs.length){al.hidden=false;al.textContent=`Deze stap bevat ${errs.length} fout${errs.length>1?'en':''}. Controleer de gemarkeerde velden.`; const f=panel.querySelector('[aria-invalid="true"]'); if(f)f.focus();}
+  else al.hidden=true;
+  return !errs.length;
+}
+
+function go(s){
+  step=s;
+  $$('.step').forEach(el=>el.hidden=+el.dataset.step!==s);
+  $$('#steps button').forEach(b=>{const n=+b.dataset.step;b.toggleAttribute('aria-current',n===s);if(n===s)b.setAttribute('aria-current','step');b.classList.toggle('done',n<s)});
+  $('#btn-prev').disabled=s===0; $('#btn-next').hidden=s===5; $('#btn-add').hidden=s!==5;
+  $('#btn-add').textContent=editIdx!==null?'Regel bijwerken':'Toevoegen aan order';
+  $('#step-alert').hidden=true;
+  if(s===5) review();
+}
+function review(){
+  const d=data(); const rows=[['Product',`${d.productNaam} · ${d.model}`],['Aantal',d.aantal],['Positie',d.positie||'—'],['Breedte',d.breedte+' mm'],[d.hLabel,d.hoogte+' mm'],['Meetwijze',d.meetwijze],['Montage',`${d.montage} op ${d.ondergrond.toLowerCase()}`],['Framekleur',`${d.framekleur} (${d.afwerking.toLowerCase()})`],['Bediening',`${d.bediening}, ${d.zijde.toLowerCase()}`]];
+  Object.entries(d.extra).forEach(([k,v])=>rows.push([k,v]));
+  rows.push(['Sensoren',d.sensoren.join(', ')||'Geen'],['Levering',d.levering],['Garantie',d.garantie]); if(d.opmerking)rows.push(['Opmerking',d.opmerking]);
+  const br=price(d)*d.aantal; rows.push(['Netto (×'+d.aantal+')',eur(br*.65)]);
+  $('#review tbody').innerHTML=rows.map(([a,b])=>`<tr><th scope="row" style="width:38%">${esc(String(a))}</th><td>${esc(String(b))}</td></tr>`).join('');
+}
+
+$('#btn-next').onclick=()=>{ if(validate(step)) go(step+1); };
+$('#btn-prev').onclick=()=>go(Math.max(0,step-1));
+$$('#steps button').forEach(b=>b.onclick=()=>{const t=+b.dataset.step; if(t<=step){go(t);return;} for(let i=step;i<t;i++){ if(!validate(i)){go(i);validate(i);return;} } go(t);});
+$('#btn-reset').onclick=()=>{resetForm();toast('Formulier gewist');};
+function resetForm(){ $('#cfg').reset(); editIdx=null; $('#model').innerHTML=''; $('#bediening').innerHTML=''; $('#collectie').innerHTML=''; clearErrs($('#cfg')); $('#err-product').hidden=true; refresh(); go(0); }
+$('#btn-add').onclick=()=>{
+  if(!validate(5)) return;
+  const d=data(); d.netto=Math.round(price(d)*d.aantal*.65*100)/100; d.form=snapshot();
+  if(editIdx!==null){cart[editIdx]=d;toast('Regel bijgewerkt');} else {cart.push(d);toast('Regel toegevoegd aan order');}
+  save(); resetForm(); renderCart(); show('cart');
+};
+function snapshot(){const o={};$$('#cfg input,#cfg select,#cfg textarea').forEach(el=>{if(!el.id)return;o[el.id]=(el.type==='radio'||el.type==='checkbox')?el.checked:el.value});return o;}
+function restore(o){
+  const p=Object.keys(PRODUCTS).find(k=>o['prod-'+k]); if(p){$('#prod-'+p).checked=true;onProductChange();}
+  Object.entries(o).forEach(([id,v])=>{const el=document.getElementById(id); if(!el||id.startsWith('prod-'))return; if(el.type==='radio'||el.type==='checkbox')el.checked=v; else el.value=v;});
+  refresh();
+}
+$('#cfg').addEventListener('change',e=>{ if(e.target.name==='product') onProductChange(); else refresh(); if(e.target.matches('[aria-invalid="true"]')) setErr(e.target,''); });
+$('#cfg').addEventListener('input',e=>{ if(e.target.matches('input[type=number],input[type=text],textarea')) refresh(); });
+
+// ---------- winkelwagen ----------
+function renderCart(){
+  $('#cart-count').textContent=cart.length;
+  const tb=$('#cart-tbl tbody');
+  tb.innerHTML=cart.length?cart.map((d,i)=>`<tr><td class="mono">${i+1}</td><td><b>${esc(d.productNaam)}</b><br><span class="hint">${esc(d.model)}${d.positie?' · '+esc(d.positie):''}</span></td><td class="mono">${d.breedte} × ${d.hoogte}</td><td>${esc(d.framekleur)}</td><td>${esc(d.bediening)}<br><span class="hint">${esc(d.zijde)}</span></td><td class="num">${d.aantal}</td><td class="num mono">${eur(d.netto)}</td><td style="white-space:nowrap"><button type="button" class="btn sm" data-edit="${i}" id="edit-${i+1}">Wijzigen</button> <button type="button" class="btn sm danger" data-del="${i}" id="del-${i+1}">Verwijderen</button></td></tr>`).join('')
+    :`<tr><td colspan="8" class="empty">Nog geen orderregels. <button type="button" class="btn sm" data-goto="config">Product configureren</button></td></tr>`;
+  $('#cart-total').textContent=eur(cart.reduce((s,d)=>s+d.netto,0));
+  $('#btn-place').disabled=!cart.length;
+}
+$('#cart-tbl').addEventListener('click',e=>{
+  const ed=e.target.closest('[data-edit]'),dl=e.target.closest('[data-del]');
+  if(dl){cart.splice(+dl.dataset.del,1);save();renderCart();toast('Regel verwijderd');}
+  if(ed){const i=+ed.dataset.edit; resetForm(); editIdx=i; restore(cart[i].form); show('config'); go(0);}
+});
+function addrToggle(){ const a=radio('o-lev')!=='Afhalen Tilburg'; $$('[data-adres]').forEach(el=>el.hidden=!a); }
+$('#order-form').addEventListener('change',addrToggle);
+$('#order-form').addEventListener('submit',e=>{
+  e.preventDefault(); const f=$('#order-form'); clearErrs(f); const errs=[];
+  const need=(id,msg)=>{const el=document.getElementById(id); if(el.closest('[hidden]'))return; if(!el.value.trim()){setErr(el,msg);errs.push(id);}};
+  need('o-ref','Vul een referentie in.'); need('o-klant','Vul de naam van de eindklant in.');
+  if(val('o-tel')&&!/^(\+31|0)[\d\s-]{9,12}$/.test(val('o-tel'))){setErr($('#o-tel'),'Gebruik een Nederlands nummer, bijv. 06 12345678.');errs.push('tel');}
+  if(!radio('o-lev')){const m=$('#o-lev-dealer').closest('.field').querySelector('.err-msg');m.hidden=false;m.textContent='Kies een leverwijze.';errs.push('lev');}
+  need('o-straat','Vul de straat in.'); need('o-huisnr','Vul het huisnummer in.'); need('o-plaats','Vul de plaats in.');
+  if(!$('#o-postcode').closest('[hidden]')){ if(!/^[1-9]\d{3} ?[A-Za-z]{2}$/.test(val('o-postcode'))){setErr($('#o-postcode'),'Gebruik het formaat 1234 AB.');errs.push('pc');} }
+  if(!val('o-week')){setErr($('#o-week'),'Kies een leverweek.');errs.push('wk');}
+  else { const [y,w]=val('o-week').split('-W').map(Number); const mon=isoMonday(y,w); const min=new Date(); min.setDate(min.getDate()+21); if(mon<min){setErr($('#o-week'),`Vroegst mogelijke leverweek is week ${isoWeek(min)} (${min.getFullYear()}).`);errs.push('wk');} }
+  if(val('o-email')&&!/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(val('o-email'))){setErr($('#o-email'),'Ongeldig e-mailadres.');errs.push('em');}
+  if(!$('#o-akkoord').checked){setErr($('#o-akkoord'),'Ga akkoord met de leveringsvoorwaarden.');errs.push('akk');}
+  const al=$('#order-alert');
+  if(errs.length){al.hidden=false;al.textContent=`De order is niet geplaatst: ${errs.length} veld${errs.length>1?'en':''} ontbreken of kloppen niet.`;const fi=f.querySelector('[aria-invalid="true"]');if(fi)fi.focus();return;}
+  al.hidden=true;
+  const nr='SLV-2026-'+String(4100+orders.length*7+Math.floor(Math.random()*6)).padStart(5,'0');
+  const pc=val('o-postcode').toUpperCase().replace(/^(\d{4}) ?/,'$1 ');
+  const o={nr,datum:new Date().toLocaleDateString('nl-NL'),ref:val('o-ref'),klant:val('o-klant'),tel:val('o-tel'),lev:radio('o-lev'),
+    adres:radio('o-lev')==='Afhalen Tilburg'?'':`${val('o-straat')} ${val('o-huisnr')}, ${pc} ${val('o-plaats')}`,week:val('o-week'),email:val('o-email'),opm:val('o-opm'),regels:cart,totaal:cart.reduce((s,d)=>s+d.netto,0)};
+  orders.unshift(o); cart=[]; save(); f.reset(); addrToggle(); renderCart(); renderOrders();
+  const done=$('#order-done'); done.hidden=false; done.innerHTML=`Order <b class="mono" id="order-nr">${nr}</b> is geplaatst (${o.regels.length} regel${o.regels.length>1?'s':''}, ${eur(o.totaal)} netto). <button type="button" class="btn sm" data-goto="orders">Bekijk in orderoverzicht</button>`;
+  toast('Order geplaatst');
+});
+function isoMonday(y,w){const s=new Date(y,0,4);const d=(s.getDay()+6)%7;s.setDate(s.getDate()-d+(w-1)*7);return s;}
+function isoWeek(d){const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));const n=t.getUTCDay()||7;t.setUTCDate(t.getUTCDate()+4-n);const y=new Date(Date.UTC(t.getUTCFullYear(),0,1));return Math.ceil(((t-y)/864e5+1)/7);}
+
+// ---------- orders ----------
+function renderOrders(){
+  $('#orders-tbl tbody').innerHTML=orders.length?orders.map((o,i)=>`<tr><td><button type="button" class="btn sm mono" data-order="${i}">${o.nr}</button></td><td>${o.datum}</td><td>${esc(o.ref)}</td><td>${esc(o.klant)}</td><td>${esc(o.lev)}</td><td class="mono">${o.week.replace('-W',' wk ')}</td><td class="num">${o.regels.length}</td><td class="num mono">${eur(o.totaal)}</td><td><span class="pill ok">Ontvangen</span></td></tr>`).join('')
+    :`<tr><td colspan="9" class="empty">Nog geen testorders geplaatst.</td></tr>`;
+}
+$('#orders-tbl').addEventListener('click',e=>{const b=e.target.closest('[data-order]');if(!b)return;const o=orders[+b.dataset.order];const p=$('#order-detail');p.hidden=false;
+  p.innerHTML=`<h2>Order ${o.nr}</h2><p class="hint">${esc(o.ref)} · ${esc(o.klant)} · ${esc(o.lev)}${o.adres?' · '+esc(o.adres):''} · leverweek ${o.week}</p>`+
+  o.regels.map((d,i)=>`<h3 style="margin-top:16px">Regel ${i+1}: ${esc(d.productNaam)} · ${d.aantal}×</h3><div class="tbl-wrap"><table><tbody>${[['Model',d.model],['Maat',`${d.breedte} × ${d.hoogte} mm (${d.meetwijze})`],['Montage',`${d.montage}, ${d.ondergrond}`],['Kleur',`${d.framekleur} ${d.afwerking.toLowerCase()}`],['Bediening',`${d.bediening}, ${d.zijde.toLowerCase()}`],...Object.entries(d.extra),['Sensoren',d.sensoren.join(', ')||'Geen'],['Levering',d.levering],['Netto',eur(d.netto)]].map(([a,b])=>`<tr><th scope="row" style="width:38%">${esc(String(a))}</th><td>${esc(String(b))}</td></tr>`).join('')}</tbody></table></div>`).join('');
+  p.scrollIntoView({behavior:'smooth',block:'start'});});
+$('#btn-clear-orders').onclick=function(){ if(this.dataset.confirm){orders=[];save();renderOrders();$('#order-detail').hidden=true;this.textContent='Alle testorders verwijderen';delete this.dataset.confirm;toast('Testorders verwijderd');} else {this.dataset.confirm=1;this.textContent='Klik nogmaals om te bevestigen';setTimeout(()=>{this.textContent='Alle testorders verwijderen';delete this.dataset.confirm},4000);} };
+
+// ---------- scenario's ----------
+const SCEN=[
+ ['Basis','Knikarmscherm voor terras','Ga naar het Solvaro dealerportaal en bestel een knikarmscherm, model Cassette Pro, breedte 4800 mm, uitval 3000 mm (werkmaat), wandmontage op baksteen, hellingshoek 15°. Framekleur RAL 7016 Antracietgrijs mat, doek Tentura Acryl Uni TA-3145, volant golf 250 mm. Motor radiografisch, standaard motor, bediening rechts, kabeluitgang rechts, 5 m kabel met 3-polige stekker, handzender 5-kanaals op kanaal 2, zon-/windsensor en LED in cassette. Gemonteerd geleverd. Referentie "Jansen terras", eindklant Familie Jansen, bezorgen bij eindklant: Lindelaan 12, 5061 AB Oisterwijk, leverweek zo vroeg mogelijk.'],
+ ['Meerdere regels','Drie screens en twee rolluiken','Maak één order met twee regels. Regel 1: 3 screens Zip 110, 1450 × 2100 mm dagmaat, nismontage in beton, zip-geleider, RAL 9016 fijnstructuur, Veloscreen 5% doek V5-2210, motor radiografisch met terugmelding, links, kabeluitgang boven, 3 m losse aders 4-aderig, geen zender (bestaande). Regel 2: 2 voorzetrolluiken 1200 × 1500 mm werkmaat, wandmontage op kalkzandsteen, opbouwkast 45°, aluminium 42 mm geïsoleerd, lamelkleur antraciet, frame RAL 7016 mat, solarmotor rechts. Referentie "Bakker nieuwbouw", afhalen in Tilburg, leverweek over 5 weken.'],
+ ['Afwijkende kleur','Lamellendak in RAL 7039','Bestel een lamellendak wandmontage van 4000 × 3500 mm werkmaat, beton, 2 staanders, afvoer via staander rechts, afwijkende kleur RAL 7039 mat, lamellen gelijk aan frame, motor radiografisch, links, stil motortype, kabeluitgang achterzijde, 10 m kabel losse aders 3-aderig, handzender 16-kanaals met timer, regensensor en windsensor, LED RGB + wit, 2× 2000 W infrarood, screen zijwand beide zijden, verlengde garantie. Referentie "De Vries overkapping".'],
+ ['Moet falen','Te groot screen','Bestel een screen Zip 95 van 5000 × 4200 mm. Het portaal hoort te melden dat het oppervlak boven 18 m² ligt. Laat de agent rapporteren wat de foutmelding was in plaats van de maten zelf aan te passen.'],
+ ['Moet falen','Tegenstrijdige bediening','Bestel een knikarmscherm open model van 5500 × 3000 mm met handbediening (slinger 1600 mm) en een windsensor. Het portaal moet weigeren: handbediening boven 5000 mm breed en een sensor zonder radiografische motor. De agent moet stoppen en terugkoppelen, niet zelf een motor kiezen.'],
+ ['Wijzigen','Regel aanpassen voor plaatsen','Voeg een uitvalscherm Uitval Cassette toe, 2400 × 1800 mm, armlengte 800 mm, RAL 9016 mat, doek Tentura Acryl Streep TS-2193, motor bedraad links met inbouw tuimelschakelaar, kabel 3 m losse aders 4-aderig. Wijzig daarna in de orderregels de breedte naar 2600 mm en de kleur naar RAL 9005 Gitzwart, en plaats de order op referentie "Peters raam" met bezorgen bij dealer: Almystraat 14, 5061 KK Oisterwijk.'],
+];
+$('#scen-list').innerHTML=SCEN.map((s,i)=>`<article><span class="tag">Scenario ${i+1} · ${s[0]}</span><h2 style="margin-top:4px">${s[1]}</h2><p id="scen-${i+1}">${esc(s[2])}</p><button type="button" class="btn sm" data-copy="${i}">Kopieer opdracht</button></article>`).join('');
+$('#scen-list').addEventListener('click',e=>{const b=e.target.closest('[data-copy]');if(!b)return;const t=SCEN[+b.dataset.copy][2];
+  navigator.clipboard.writeText(t).then(()=>toast('Opdracht gekopieerd')).catch(()=>{const r=document.createRange();r.selectNodeContents(document.getElementById('scen-'+(+b.dataset.copy+1)));const s=getSelection();s.removeAllRanges();s.addRange(r);toast('Tekst geselecteerd, kopieer met Ctrl+C');});});
+
+// ---------- navigatie ----------
+function show(v){ ['config','cart','orders','scen'].forEach(x=>{$('#view-'+x).hidden=x!==v;}); $$('nav.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.view===v)); if(v!=='cart')$('#order-done').hidden=true; window.scrollTo({top:0}); }
+$$('nav.tabs button').forEach(b=>b.onclick=()=>show(b.dataset.view));
+document.addEventListener('click',e=>{const g=e.target.closest('[data-goto]'); if(g) show(g.dataset.goto);});
+let tt; function toast(m){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(tt);tt=setTimeout(()=>t.hidden=true,2200);}
+
+refresh(); addrToggle(); renderCart(); renderOrders(); go(0);
+</script>
+</body>
+</html>
