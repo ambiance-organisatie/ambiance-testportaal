@@ -11,3 +11,16 @@ Fictief dealerportaal van een zonweringsleverancier, bedoeld om AI-agents en com
 Alles staat in één bestand (`index.html`), zonder build-stap. Open het lokaal in een browser of publiceer via GitHub Pages.
 
 Solvaro is een verzonnen naam. Prijzen, doekcollecties en artikelcodes zijn fictief.
+
+## Tweede portaal: Konfigo Order Entry (`/configurator/`)
+
+Een tweede, los testportaal met de opbouw van een SaaS order-entry configurator zoals leveranciers die gebruiken: smalle topbalk, zijmenu, één lange configuratietabel met inklapbare onderdelen (Omschrijving / Aantal / Totaalprijs), een zijpaneel met navigatie, totaalprijs en de knoppen "Nieuwe offerte maken" en "Nieuwe configuratie toevoegen".
+
+- Fictieve leverancier **Nordhaven Zonwering** op het fictieve platform **konfigo**
+- 5 producten (3 knikarmschermen, screen, uitvalscherm) met tabelprijzen, meerprijzen per optie en losse artikelen
+- Zoekvelden voor kleur en doeknummer, afhankelijke velden (snoer/handzender/schakelaar per motortype) en realistische validatie
+- Offertes (aanmaken, regels toevoegen/wijzigen, gegevens wijzigen, dupliceren, bestellen), CRM-accounts, sjablonen, eigenschappen, master data en instellingen
+- Zes testscenario's op de homepagina, waarvan drie bewust moeten falen
+- Gegevens blijven in de eigen browser (localStorage); via het gebruikersmenu zet je de testdata terug
+
+Live: https://ambiance-organisatie.github.io/ambiance-testportaal/configurator/
