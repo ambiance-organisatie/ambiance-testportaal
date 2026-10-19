@@ -259,6 +259,7 @@ dl.kv dd{margin:0}
     <div class="menu" id="user-menu" style="right:0" hidden>
       <button data-href="#/instellingen">Instellingen</button>
       <button data-href="#/home" data-scroll="scen">Testscenario's</button>
+      <button data-href="#/testorders">Testorders</button>
       <button id="reset-data">Testdata wissen</button>
       <button id="logout">Uitloggen</button>
     </div>
@@ -658,7 +659,7 @@ function route(){
  const h=decodeURIComponent(location.hash.replace(/^#\/?/,''))||'home';const [a,b]=h.split('/');
  $$('.menu').forEach(m=>m.hidden=true);closeModal();document.body.classList.remove('full');
  setNav(a==='masterdata'?'masterdata/'+(b||'producten'):a);
- const v={home:vHome,'order-entry':vProducts,configurator:()=>vConfig(b),offertes:()=>b?vOfferte(b):vOffertes(),sjablonen:vTemplates,eigenschappen:vProps,crm:vCrm,instellingen:vSettings,masterdata:()=>vMaster(b||'producten')}[a]||vHome;
+ const v={home:vHome,testorders:vTestorders,'order-entry':vProducts,configurator:()=>vConfig(b),offertes:()=>b?vOfferte(b):vOffertes(),sjablonen:vTemplates,eigenschappen:vProps,crm:vCrm,instellingen:vSettings,masterdata:()=>vMaster(b||'producten')}[a]||vHome;
  v();window.scrollTo(0,0);
 }
 window.addEventListener('hashchange',route);
@@ -691,11 +692,107 @@ Voeg in dezelfde offerte 2 hoeklijnen 40 x 40 x 2 mm van 2400 mm toe, ook in 701
  {t:'8 · Moet melden: Carré 95 vraagt naadloos doek',fail:1,d:`Configureer een Ambiance Carré 95 van 3000 × 1100 mm, Somfy Orea WT, bediening rechts, RAL 9016, standaard Ambiance acrylcollectie doek 8203. De agent hoort te zien dat 1100 mm uitval alleen kan met uni-naadloos doek en dat terug te vragen in plaats van het zelf aan te passen.`},
  {t:'9 · Gekoppeld uitvalscherm',d:`Maak een Arcos, totale breedte 6400 mm in 2 delen gekoppeld met doorlopende kap, uitval 1100 mm, Somfy Sunea io rechts met Situo 1 io II, RAL 9010, doek Dickson standaard uni 6688, windvaste armen. Controleer dat de minderprijs voor de koppeling (€ 73) is verrekend.`}
 ];
+const TESTORDERS=[
+ {n:1,lvl:'Klant · websiteformulier',d:`Onderwerp: Prijs zonnescherm keukenraam
+
+Hallo,
+Wat kost een uitvalscherm voor ons keukenraam? Het raam is ongeveer 2 meter breed. Graag in het wit.
+
+Groetjes, Sandra Smit
+Hoofdstraat 22, Oisterwijk`},
+ {n:2,lvl:'Klant · e-mail',d:`Goedemorgen,
+
+Vorige week zagen we in de winkel de Carré 95. Daar willen we er 3 van voor de slaapkamers aan de voorkant. De ramen zijn allemaal 160 cm breed en het scherm mag 90 cm uitvallen.
+Kast wit (RAL 9016), doek uit de standaard acrylcollectie, nummer 8203. Gewoon met het afstandsbedieninkje dat erbij hoort, bediening rechts.
+Graag zo snel mogelijk.
+
+Met vriendelijke groet,
+Fam. Verhoeven
+Esdoornlaan 9, 5062 CD Oisterwijk
+06 22334455`},
+ {n:3,lvl:'Klant · zakelijke e-mail',d:`Beste Ambiance,
+
+Voor onze winkelpui zoeken we een Arcos uitvalscherm van 4,5 meter breed met 1,40 m uitval. Kast in ons huisstijlrood RAL 3004, doek Sattler Lumera 3D kleur 3156. Motor met afstandsbediening, bediening links.
+Kunnen jullie een offerte sturen?
+
+Groet,
+P. van Os, Bakkerij Van Os`},
+ {n:4,lvl:'Verkoper · showroomnotitie',d:`Showroom 14-10, klant Peters (staat in CRM)
+Carré 110 – 3800 x 1100 – io links – Situo – 7016-SL – Dickson std uni 6688 – windvast std
+ref: Peters zijgevel
+afl. bij klant, wk zsm`},
+ {n:5,lvl:'Klant · e-mail met technische wensen',d:`Hoi,
+
+Boven onze terrasdeur (2,40 m breed) willen we een Arcos met 1,20 m uitval. Geen afstandsbediening: er zit al een schakelaar in de muur, dus graag een motor voor op een schakelaar. De elektricien vraagt om 10 meter wit snoer.
+Kast crème (RAL 9001), doek Sattler Groove kleur 4410. Bediening links.
+Bezorgen bij ons thuis graag, maakt niet uit welke week.
+
+Fam. Bakker
+Molenstraat 5, 5061 GH Oisterwijk
+06 12121212`},
+ {n:6,lvl:'Verkoper · twee producten',d:`Klant: Fam. de Groot (CRM). Appartement, balkon 3e verdieping.
+- Arcos 3000 breed, uitval 900, balkonhoekarmen, io rechts met Situo 1 io II, kast RAL 7016 (glad), doek Ambiance acryl 8201.
+- Erbij 2 hoeklijnen 40x40x2 van 2400 mm in RAL 7016 voor de bevestiging op de balkonrand.
+Ref "De Groot balkon", afleveren bij de dealer, leverweek zo vroeg mogelijk.`},
+ {n:7,lvl:'Verkoper · gekoppeld scherm',d:`Offerte-aanvraag Bakkerij Van Os (CRM), terras achterzijde.
+Carré 110, totaal 6800 mm breed in 2 delen gekoppeld met doorlopende kap, uitval 1200.
+Somfy io, bediening rechts, Smoove Origin wandzender. Kast 9010-SL. Doek Swela Sunvas SV 12. Stormvaste armen (zeewind).
+Ref "Van Os terras", afleveren bij klant, week 50.`},
+ {n:8,lvl:'Inmeter · inmeetbon',d:`INMEETBON — Ambiance, inmeter R. Jansen — 16-10-2026
+Klant (nieuw): Fam. Hendriks, Kastanjelaan 17, 5061 PK Oisterwijk, 06 33445566
+Product: Ambiance Carré 95 (uitvalscherm), 2 posities
+Pos. 1 keuken: breedte 3150 mm, uitval 1200 mm, bediening rechts
+Pos. 2 woonkamer: breedte 2380 mm, uitval 1200 mm, bediening links
+Beide: Somfy Sunea io. Klant heeft al een Situo 5 io → geen nieuwe zender, inleren op kanaal 2 en 3.
+Kast: 7021-SL. Doek: Dickson Sunworker 0012, uni-naadloos.
+Armen: windvast standaard. Niet koppelen.
+Montage: gevel baksteen, bovenkant kast ca. 2350 mm, stroom binnen aanwezig bij beide ramen.
+Levering: bij dealer, week 47. Ref: Hendriks keuken + woonkamer.
+Opmerking voor leverancier: pos. 1 hemelwaterafvoer op 120 mm van de linkerkant.`},
+ {n:9,lvl:'Inmeter · inmeetbon met afwijkingen',d:`INMEETBON — inmeter K. de Wit — 17-10-2026
+Klant (nieuw): Fam. Willems, Populierenweg 30, 5062 AT Oisterwijk, 06 55667788
+Pos. 1 Arcos uitvalscherm
+- breedte 2600 mm, glijarmen 200 cm (doeklengte 240 cm, werkhoogte 100 cm) → tabelregel uitval 1400
+- Somfy Sunea io, bediening links, Situo 1 io II
+- kast 9016-SL
+- doek Soltis 86, kleur 86-2044 (uitdrukkelijk verzoek klant; gewezen op "geen garantie", klant heeft getekend)
+- geen extra armen
+Pos. 2 Kokers en hoeklijnen, alles 9016-SL
+- 1× koker 80x40x2, 2650 mm (afdekking boven kast)
+- 2× hoeklijn 50x50x4, 900 mm (steunen balkon)
+Levering bij klant, week 48. Ref: Willems voorgevel.`},
+ {n:10,lvl:'Monteur · volledige invulbon',d:`MONTAGE-/INVULBON — monteur T. Smulders — 19-10-2026
+Klant (nieuw): Fysiotherapie De Linde, contact mevr. A. Kuipers, Lindeplein 4, 5061 BS Oisterwijk, 013 5287711, info@delinde-test.nl
+Referentie: De Linde zonwering 2026
+Levering: bij klant, week 49. Lossen achterzijde via laad- en losplaats, 30 min voor aankomst bellen.
+
+Pos. 1 — Carré 110, voorgevel wachtruimte
+Totale breedte 6900 mm, 3 delen gekoppeld met doorlopende kap. Uitval 1100.
+Somfy Sunea io, bediening rechts, Smoove Origin io wandzender. Afwijkend motorsnoer: 5 meter zwart.
+Kast 7016-SM. Doek Sattler Lumera 3D, kleur L3D 215. Stormvaste armen.
+
+Pos. 2 — 2× Ambiance Carré 95, behandelkamers 1 en 2
+Breedte 1450 mm, uitval 900. Somfy Orea WT (op bestaande schakelaars), bediening links.
+Kast 7016-SM, doek Sattler Lumera 3D L3D 215, armen standaard.
+
+Pos. 3 — Arcos, binnenplaats
+Breedte 1800 mm, uitval 1100. Monocommando binnen met draaistang 160 cm, bediening rechts.
+Vaste armen (geen wind op binnenplaats). Kast 7016-SM, doek L3D 215.
+
+Pos. 4 — 3× koker 60x60x2, lengte 2800 mm, 7016-SM (afdekking muuraansluiting pos. 1)
+
+Montage-informatie (in de opmerking): gevel beton, montagehoogte pos. 1 2800 mm, steiger nodig bij pos. 1, stroom pos. 1 via buitencontactdoos rechts.`},
+];
+function vTestorders(){
+ view.innerHTML=crumb([['Home','#/home'],['Testorders']])+`<div class="page"><h1>Testorders</h1><p class="lead">Tien orders op basis van het Allround-assortiment uit het prijsboek, oplopend van een kort klantbericht tot een volledige monteursbon. Geef de tekst aan een agent en laat hem de offerte maken. Niet elke order is compleet: soms hoort de agent eerst iets te vragen.</p>
+ <div class="scen">${TESTORDERS.map(o=>`<article><h3>Order ${o.n} · ${esc(o.lvl)}</h3><p>${esc(o.d)}</p><button class="btn sm" data-tcopy="${o.n}">Kopieer order</button></article>`).join('')}</div></div>`;
+ $$('[data-tcopy]').forEach(b=>b.onclick=()=>{const t=TESTORDERS.find(o=>o.n===+b.dataset.tcopy).d;(navigator.clipboard?.writeText(t)||Promise.reject()).then(()=>toast('Order gekopieerd.'),()=>toast('Kopiëren lukt niet in deze browser; selecteer de tekst handmatig.',1))});
+}
 function vHome(){
  const open=offertes.filter(o=>o.status==='Concept'),best=offertes.filter(o=>o.status==='Besteld');
  view.innerHTML=crumb([['Home']])+`<div class="page">
  <h1>Welkom, ${esc(settings.naam)}</h1><p class="lead">Order Entry-omgeving van Nordhaven Zonwering (acceptatie). Alle namen, prijzen en artikelcodes zijn fictief; gegevens blijven in je eigen browser.</p>
- <div class="tiles"><a class="tile" href="#/order-entry"><b>+</b><span>Nieuwe configuratie</span></a><a class="tile" href="#/offertes"><b>${open.length}</b><span>Open offertes</span></a><a class="tile" href="#/offertes"><b>${best.length}</b><span>Bestellingen</span></a><a class="tile" href="#/crm"><b>${accounts.length}</b><span>CRM-accounts</span></a></div>
+ <div class="tiles"><a class="tile" href="#/order-entry"><b>+</b><span>Nieuwe configuratie</span></a><a class="tile" href="#/offertes"><b>${open.length}</b><span>Open offertes</span></a><a class="tile" href="#/offertes"><b>${best.length}</b><span>Bestellingen</span></a><a class="tile" href="#/testorders"><b>10</b><span>Testorders (Allround)</span></a><a class="tile" href="#/crm"><b>${accounts.length}</b><span>CRM-accounts</span></a></div>
  <div class="card"><h2>Recente offertes</h2>${offTable(offertes.slice(-5).reverse())}</div>
  <div class="card" id="scen"><h2>Testscenario's</h2><p class="lead">Opdrachten om aan een agent te geven. Scenario's met een rode rand bevatten een bewuste fout die het portaal hoort af te vangen.</p>
  <div class="scen">${SCEN.map((s,i)=>`<article class="${s.fail?'fail':''}"><h3>${esc(s.t)}</h3><p>${esc(s.d)}</p><button class="btn sm" data-copy="${i}">Kopieer opdracht</button></article>`).join('')}</div></div></div>`;
