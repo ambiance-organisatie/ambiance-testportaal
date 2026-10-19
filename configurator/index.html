@@ -273,6 +273,7 @@ dl.kv dd{margin:0}
       <li class="grp"><button type="button" data-grp><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 3 7v10l9 5 9-5V7Zm0 2.3L18.6 8 12 11.7 5.4 8ZM5 9.7l6 3.4v6.6l-6-3.3Zm8 10v-6.6l6-3.4v6.7Z"/></svg><span class="lbl">Master Data</span><svg class="caret" viewBox="0 0 10 10"><path d="M1 3l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button>
         <ul>
           <li><a href="#/masterdata/producten" data-nav="masterdata/producten"><span class="lbl">Producten</span></a></li>
+          <li><a href="#/masterdata/prijstabellen" data-nav="masterdata/prijstabellen"><span class="lbl">Prijstabellen</span></a></li>
           <li><a href="#/masterdata/kleuren" data-nav="masterdata/kleuren"><span class="lbl">Kleuren</span></a></li>
           <li><a href="#/masterdata/doeken" data-nav="masterdata/doeken"><span class="lbl">Doeken</span></a></li>
           <li><a href="#/masterdata/artikelen" data-nav="masterdata/artikelen"><span class="lbl">Losse artikelen</span></a></li>
@@ -317,8 +318,57 @@ const PRODUCTS=[
  {id:'moneo500',name:'Moneo 500 Cassette',cat:'Knikarmschermen',type:'knikarm',cassette:true,desc:'Volledig gesloten cassettescherm',w:[2000,7000],p:[1500,2000,2500,3000,3500],base:3290},
  {id:'arco300',name:'Arco 300 Semi-cassette',cat:'Knikarmschermen',type:'knikarm',semi:true,desc:'Semi-cassette met afdekkap boven de doekrol',w:[1800,5500],p:[1500,2000,2500,3000],base:2890},
  {id:'vista85',name:'Vista Screen 85',cat:'Screens',type:'screen',desc:'Verticaal screen met zip-geleiding',w:[600,4000],h:[600,3500],base:640,maxM2:12},
- {id:'ventura',name:'Ventura Uitvalscherm',cat:'Uitvalschermen',type:'uitval',desc:'Raamscherm met uitvalarmen',w:[600,4000],h:[600,2500],base:520,maxM2:8},
 ];
+/* ---- Allround-assortiment uit het Ambiance prijsboek 2026 (§5.0.1–5.0.3 en §10.0.2). Prijzen = consumentenadviesprijs incl. btw en standaardmontage. ---- */
+const AR_W=(a,b)=>{const r=[];for(let x=a;x<=b;x+=200)r.push(x);return r};
+PRODUCTS.push(
+ {id:'carre95',name:'Ambiance Carré 95',art:'US0102 | 54.255.80',cat:'Uitvalschermen',type:'ar',incl:1,src:'§5.0.1',desc:'Uitvalscherm met kap 95 mm',
+  cols:AR_W(1000,4000),doek:{900:1600,1100:1800,1200:2000},naadloos:[1100,1200],vast:-30,
+  rows:{900:[1609,1653,1697,1741,1785,1832,1876,1920,1964,2013,2055,2101,2145,2189,2236,2280],
+        1100:[1623,1669,1716,1766,1813,1862,1909,1956,2002,2052,2099,2148,2195,2242,2289,2338],
+        1200:[1636,1686,1738,1791,1837,1890,1942,1991,2044,2093,2143,2195,2244,2294,2346,2396]}},
+ {id:'carre110',name:'Carré 110',art:'US0103 | 54.255.80',cat:'Uitvalschermen',type:'ar',incl:1,src:'§5.0.2',desc:'Uitvalscherm met kap 110 mm, tot 5600 mm breed',
+  cols:AR_W(1000,5600),doek:{900:1600,1100:1800,1200:2000,1400:2400},vast:-30,ms:w=>w<=4800?3:4,
+  rows:{900:[1683,1741,1793,1846,1903,1956,2008,2063,2115,2170,2225,2278,2333,2385,2440,2495,2547,2602,2654,2707,2762,2817,2872,2924],
+        1100:[1700,1757,1815,1870,1928,1986,2041,2099,2156,2211,2269,2324,2382,2437,2495,2550,2608,2665,2720,2778,2836,2894,2949,3007],
+        1200:[1713,1777,1835,1895,1953,2016,2074,2134,2192,2253,2311,2371,2432,2492,2550,2610,2671,2729,2789,2847,2908,2968,3029,3089],
+        1400:[1746,1810,1876,1942,2005,2071,2140,2203,2269,2335,2399,2465,2531,2597,2663,2729,2792,2858,2924,2990,3053,3122,3185,3252]}},
+ {id:'arcos',name:'Arcos',art:'US0101 | 60.255.80',cat:'Uitvalschermen',type:'ar',incl:1,src:'§5.0.3',desc:'Uitvalscherm met ronde kap, ook met glijarmen',
+  cols:AR_W(1000,4000),doek:{900:1600,1100:1800,1200:2000,1400:2400},vast:-25,glij:1,ms:w=>w<=3400?2:3,
+  rows:{900:[1885,1946,1999,2056,2110,2170,2224,2281,2335,2392,2449,2506,2563,2616,2673,2730],
+        1100:[1904,1965,2025,2085,2145,2202,2265,2322,2382,2442,2502,2563,2620,2683,2740,2800],
+        1200:[1920,1987,2047,2110,2173,2240,2303,2366,2430,2490,2556,2616,2683,2743,2806,2869],
+        1400:[1958,2028,2097,2170,2240,2309,2379,2449,2518,2588,2657,2730,2800,2869,2939,3009]}},
+ {id:'profielen',name:'Kokers en hoeklijnen',art:'Allround',cat:'Kokers en hoeklijnen',type:'profiel',incl:1,src:'§10.0.2',desc:'Aluminium kokers en hoeklijnen in kleur, per meter'},
+);
+PRODUCTS.filter(p=>p.type==='ar').forEach(p=>{p.w=[p.cols[0],p.cols[p.cols.length-1]];p.u=Object.keys(p.rows).map(Number);p.base=p.rows[p.u[0]][0]});
+const PROFIELEN=[
+ ['h20x30','Hoeklijn 20 x 30 x 2 mm',8],['h20x40','Hoeklijn 20 x 40 x 2 mm',10],['h20x50','Hoeklijn 20 x 50 x 2 mm',12],['h20x70','Hoeklijn 20 x 70 x 2 mm',15],
+ ['h30x30','Hoeklijn 30 x 30 x 2 mm',10],['h40x40','Hoeklijn 40 x 40 x 2 mm',14],['h40x70','Hoeklijn 40 x 70 x 2 mm',19],['h50x50','Hoeklijn 50 x 50 x 4 mm',34],
+ ['h60x40','Hoeklijn 60 x 40 x 4 mm',34],['h80x40','Hoeklijn 80 x 40 x 4 mm',41],['h100x40','Hoeklijn 100 x 40 x 4 mm',48],['h150x75','Hoeklijn 150 x 75 x 8 mm',154],
+ ['k25x25','Koker 25 x 25 x 2 mm',16],['k30x30','Koker 30 x 30 x 2 mm',20],['k40x20','Koker 40 x 20 x 2 mm',20],['k40x30','Koker 40 x 30 x 2 mm',23],
+ ['k40x40','Koker 40 x 40 x 2 mm',27],['k50x50','Koker 50 x 50 x 4 mm',65],['k60x40','Koker 60 x 40 x 3 mm',50],['k60x60','Koker 60 x 60 x 2 mm',41],
+ ['k80x40','Koker 80 x 40 x 2 mm',41],['k80x80','Koker 80 x 80 x 3 mm',82],['k100x40','Koker 100 x 40 x 4 mm',94],['k100x100','Koker 100 x 100 x 5 mm',181],
+ ['overig','Overige hoeklijn of koker (op aanvraag, handelslengte 5 m)',0],
+];
+const TOESLAG_LOS=146, TOESLAG_COMBI=44;
+/* doekoverzicht p. 11, kolom "Uitval + knikarm": prijsgroep, of null = combinatie niet leverbaar binnen garantie */
+const AR_DOEK=[
+ ['amb','Ambiance acrylcollectie','std'],
+ ['dick-std','Dickson standaard uni, blokstreep en fantasiestreep','B'],['sat-std','Sattler standaard uni, blokstreep en fantasiestreep','B'],
+ ['sat-oeko','Sattler Oeko Weave','B'],['sat-lum','Sattler Lumera','B'],['tib','Tibelly standaard uni, blokstreep en fantasiestreep','B'],
+ ['sat-lum3d','Sattler Lumera 3D','C'],['sat-groove','Sattler Groove','C'],
+ ['swela','Swela Sunvas (standaard verlijmd)','D'],['dick-buiten','Dickson buiten standaard collectie','D'],['dick-max','Dickson Max (zonder garantie gekoppelde schermen)','D'],
+ ['sat-allw','Sattler Lumere Allweather (standaard verlijmd)','D'],['sat-buiten','Sattler buiten standaard collectie','D'],['dick-sunw','Dickson Sunworker','D'],
+ ['serge5','Allround Serge 5% collectie',null],['serge1','Allround Serge 1% collectie',null],['serge10','Allround Serge 10% collectie',null],
+ ['twilight','Sattler Twilight comfort',null],['soltis86','Soltis 86',null],['soltis92','Soltis 92',null],['serge-vd','Serge Verduisterend',null],
+];
+const DOEKGROEP={std:0,B:80,C:155,D:240};
+/* Ambiance kleurencollectie p. 12: 192 RAL-kleuren + 14 structuurlakken, zonder meerprijs */
+const RAL_HEX={'1013':'#e3d9c6','1015':'#e6d6b5','3004':'#6b1c23','5011':'#1a2b3c','6009':'#27352a','7016':'#383e42','7021':'#2f3234','7039':'#6b665e','8019':'#3d3635','9001':'#e9e0d2','9005':'#0e0e10','9006':'#a1a1a0','9007':'#878581','9010':'#f1ece1','9016':'#f1f0ea','DB703':'#4a4a48'};
+const AMB_COLORS=[...'1000,1001,1002,1003,1004,1005,1006,1007,1011,1012,1013,1014,1015,1016,1017,1018,1019,1020,1021,1023,1024,1027,1028,1032,1033,1034,1037,2000,2001,2002,2003,2004,2008,2009,2010,2011,2012,3000,3001,3002,3003,3004,3005,3007,3009,3011,3012,3013,3014,3015,3016,3017,3018,3020,3022,3027,3028,3031,4001,4002,4003,4004,4005,4006,4007,4008,4009,4010,5000,5001,5002,5003,5004,5005,5007,5008,5009,5010,5011,5012,5013,5014,5015,5017,5018,5019,5020,5021,5022,5023,5024,6000,6001,6002,6003,6004,6005,6006,6007,6008,6009,6010,6011,6012,6013,6014,6015,6016,6017,6018,6019,6020,6021,6022,6024,6025,6026,6027,6028,6029,6032,6033,6034,6037,7000,7001,7002,7003,7004,7005,7006,7008,7009,7010,7011,7012,7013,7015,7016,7021,7022,7023,7024,7026,7030,7031,7032,7033,7034,7035,7036,7037,7038,7039,7040,7042,7043,7044,7045,7046,7047,8000,8001,8002,8003,8004,8007,8008,8011,8012,8014,8015,8016,8017,8019,8022,8023,8024,8025,8028,9001,9002,9003,9004,9005,9006,9007,9010,9011,9016,9017,9018'.split(',').map(c=>({id:'RAL '+c,label:'RAL '+c,p:0,hex:RAL_HEX[c]||''})),
+ ...['5011','6009','7016','7021','7039','9001','9005','9010','9016'].map(c=>({id:c+'-SL',label:c+'-SL structuurlak mat',p:0,hex:RAL_HEX[c]})),
+ ...['DB703','7016','8019','9006','9007'].map(c=>({id:c+'-SM',label:c+'-SM structuurlak metallic',p:0,hex:RAL_HEX[c]}))];
 const COLORS=[
  ['RAL 9016','Verkeerswit','glad',0,'#f1f0ea'],['RAL 9001','Crèmewit','glad',0,'#e9e0d2'],['RAL 1015','Licht ivoor','glad',0,'#e6d6b5'],
  ['RAL 9006','Blank aluminium','glad',0,'#a1a1a0'],['RAL 9007','Grijs aluminium','glad',0,'#878581'],['RAL 7016','Antracietgrijs','glad',0,'#383e42'],
@@ -345,6 +395,8 @@ const isIo=v=>v.motor==='io', isWt=v=>v.motor==='wt', isMotor=v=>isIo(v)||isWt(v
 const SCHEMA={};
 function sectionsFor(P){
  if(SCHEMA[P.id])return SCHEMA[P.id];
+ if(P.type==='ar')return finalize(P,arSections(P));
+ if(P.type==='profiel')return finalize(P,profielSections(P));
  const K=P.type==='knikarm', SC=P.type==='screen', UV=P.type==='uitval';
  const secs=[
   {id:'ref',title:'Order regel referentie',fields:[{id:'ref',type:'ref',label:'Order regel referentie'}]},
@@ -405,17 +457,75 @@ function sectionsFor(P){
   ]},
   {id:'extra',title:'Extra losse artikelen',special:'extras'},
  ];
+ return finalize(P,secs);
+}
+function finalize(P,secs){
  secs.forEach(s=>s.fields&&(s.fields=s.fields.filter(Boolean)));
- const flat=[];const walk=(fs,parent)=>fs.forEach(f=>{f.parent=parent;f.sec=f.sec;flat.push(f);if(f.type==='group')walk(f.fields,f.id)});
- secs.forEach(s=>s.fields&&s.fields.forEach(f=>f.secId=s.id)) ;
- secs.forEach(s=>s.fields&&walk(s.fields,null));
- flat.forEach(f=>{if(f.parent){f.secId=flat.find(g=>g.id===f.parent).secId}});
+ const flat=[];const walk=(fs,parent,secId)=>fs.forEach(f=>{f.parent=parent;f.secId=secId;flat.push(f);if(f.type==='group')walk(f.fields,f.id,secId)});
+ secs.forEach(s=>s.fields&&walk(s.fields,null,s.id));
  return SCHEMA[P.id]={secs,flat};
+}
+/* Allround uitvalschermen: opbouw volgens prijsboek (genoemde prijs incl. Sunea io, 2 windvaste veerarmen, standaard doek, omkasting uit kleurencollectie, Situo 1 io II / Smoove Origin io, standaardmontage) */
+function arSections(P){
+ const motor=v=>v.bed==='io'||v.bed==='wt';
+ return [
+  {id:'ref',title:'Order regel referentie',fields:[{id:'ref',type:'ref',label:'Order regel referentie'}]},
+  {id:'afm',title:'Afmetingen',fields:[
+    {id:'breedte',label:'Breedte',type:'mm',req:1,def:0,hint:`Prijstabel ${P.w[0]}–${P.w[1]} mm in stappen van 200 mm; tussenmaten rekenen af naar de eerstvolgende kolom`},
+    {id:'uitval',label:'Uitval',type:'mm',req:1,def:0,hint:'Leverbaar: '+P.u.map(u=>`${u} mm (doeklengte ${P.doek[u]} mm)`).join(', ')},
+    {id:'tabel',label:'Tabelprijs',type:'tabel'},
+  ]},
+  {id:'adv',special:'adv'},
+  {id:'bed',title:'Bediening',fields:[
+    {id:'bed',label:'Type bediening',type:'radio',req:1,def:'io',options:[['io','Somfy Sunea io motor (standaard)'],['wt','Somfy Orea WT',-65],['oog','Oogwindwerk met draaistang 160 cm',-230],['mono','Monocommando binnen met draaistang 160 cm',-150]]},
+    {id:'zijde',label:'Bedieningszijde',type:'radio',req:1,options:[['L','Links'],['R','Rechts']]},
+    {id:'zender',label:'Handzender (inbegrepen t.w.v. € 80, wordt los besteld)',type:'radio',req:1,show:v=>v.bed==='io',options:[['situo','Somfy Situo 1 io II'],['smoove','Somfy Smoove Origin io (wandzender)'],['geen','Geen, klant heeft al een zender']]},
+    {id:'snoerafw',label:'Afwijkend motorsnoer',type:'check',price:45,show:motor},
+    {id:'snoertxt',label:'Gewenst motorsnoer (lengte / uitvoering)',type:'text',req:1,ph:'bijv. 10 meter wit',show:v=>motor(v)&&v.snoerafw},
+  ]},
+  {id:'kleur',title:'Kleur omkasting',fields:[
+    {id:'kleur',label:'Kleur (Ambiance kleurencollectie, geen meerprijs)',type:'color',list:'amb',req:1},
+  ]},
+  {id:'doek',title:'Doek',fields:[
+    {id:'arcoll',label:'Doekcollectie',type:'radio',req:1,def:'amb',options:AR_DOEK.map(([k,l,g])=>[k,l+(g===null?' · niet leverbaar binnen garantie':g==='std'?' · standaard':' · prijsgroep '+g),g?DOEKGROEP[g]:0])},
+    {id:'nogar',label:'Akkoord: deze doekcombinatie valt buiten de garantie',type:'check',price:0,show:v=>{const d=AR_DOEK.find(x=>x[0]===v.arcoll);return !!d&&d[2]===null}},
+    {id:'doekcode',label:'Doeknummer / kleurcode',type:'text',req:1,ph:'bijv. 8203'},
+    P.naadloos&&{id:'naadloos',label:'Doekuitvoering',type:'radio',req:1,def:'std',options:[['std','Standaard'],['naadloos','Uni-naadloos doek']]},
+  ]},
+  {id:'armen',title:'Armen en muursteunen',fields:[
+    {id:'armen',label:'Type armen',type:'radio',req:1,def:'wind',options:[['wind','2 windvaste veerarmen (standaard)'],['vast','Vaste armen i.p.v. windvaste armen (per stel)',P.vast],['storm','Stormvaste armen i.p.v. windvaste armen (per stel)',20],['balkon','Balkonhoekarmen i.p.v. windvaste armen (per stel)',190],
+      ...(P.glij?[['glij170','Glijarmen uitval 170 cm, doeklengte 200 cm, werkhoogte 80 cm (per stel)',810],['glij200','Glijarmen uitval 200 cm, doeklengte 240 cm, werkhoogte 100 cm (per stel)',870]]:[])]},
+    {id:'extraarm',label:'Extra windvaste arm (per stuk € 95)',type:'num',unit:'st',def:0,each:95,hint:'0 tot en met 2'},
+    P.ms&&{id:'msaantal',label:'Aantal muursteunen',type:'calc'},
+  ]},
+  {id:'koppel',title:'Koppelen met doorlopende kap',fields:[
+    {id:'koppel',label:'Koppeling',type:'radio',req:1,def:'nee',options:[['nee','Niet gekoppeld'],['ja','Gekoppeld met doorlopende kap (1 bediening, incl. 3de arm)']]},
+    {id:'delen',label:'Aantal schermdelen',type:'num',unit:'st',req:1,def:2,show:v=>v.koppel==='ja',hint:'Opgegeven breedte = totale breedte, maximaal 7000 mm. Minderprijs € 73 per onderbreking.'},
+  ]},
+  {id:'extra',title:'Extra losse artikelen',special:'extras'},
+ ];
+}
+function profielSections(P){
+ return [
+  {id:'ref',title:'Order regel referentie',fields:[{id:'ref',type:'ref',label:'Order regel referentie'}]},
+  {id:'prof',title:'Profiel',fields:[
+    {id:'profiel',label:'Profiel',type:'radio',req:1,options:PROFIELEN.map(([k,l,p])=>[k,l+(p?` · € ${p} per meter`:'')])},
+    {id:'profieltxt',label:'Omschrijving afwijkend profiel',type:'text',req:1,ph:'bijv. koker 120 x 40 x 3 mm',show:v=>v.profiel==='overig'},
+    {id:'lengte',label:'Lengte per stuk',type:'mm',req:1,def:0,hint:'Wordt berekend vanaf 1 meter'},
+    {id:'tabel',label:'Prijs per stuk',type:'tabel'},
+  ]},
+  {id:'kleur',title:'Kleur',fields:[{id:'kleur',label:'Kleur (Ambiance kleurencollectie)',type:'color',list:'amb',req:1}]},
+  {id:'toeslag',title:'Verwerkingstoeslag',fields:[{id:'toeslaginfo',label:`Per opdracht € ${TOESLAG_LOS}, of € ${TOESLAG_COMBI} in combinatie met een compleet systeem/product. Wordt één keer op de offerte berekend.`,type:'info'}]},
+ ];
 }
 
 /* ============ pure berekeningen ============ */
 function visOf(P,v){const {flat}=sectionsFor(P);const vis={};flat.forEach(f=>{vis[f.id]=(!f.parent||vis[f.parent])&&(!f.show||f.show(v))});return vis}
+function arTabel(P,w,u){const row=P.rows[u]||P.rows[P.u.find(x=>x>=u)||P.u[P.u.length-1]];let ci=P.cols.findIndex(c=>c>=w);if(ci<0)ci=P.cols.length-1;return row[ci]}
+function arParts(v){return v.koppel==='ja'?Math.max(2,Math.round(+v.delen)||2):1}
 function tabelPrice(P,v){
+ if(P.type==='ar'){const w=+v.breedte||0,u=+v.uitval||0;if(!(w>0&&u>0))return P.base;const n=arParts(v);return n*arTabel(P,Math.ceil(w/n),u)-73*(n-1)}
+ if(P.type==='profiel'){const pr=PROFIELEN.find(x=>x[0]===v.profiel);const l=+v.lengte||0;return pr&&l>0?pr[2]*Math.max(1,l/1000):0}
  if(P.type==='knikarm'){const w=+v.breedte||0,u=+v.uitval||0;if(!(w>0&&u>0))return P.base;
   const wi=Math.max(0,Math.ceil((Math.min(w,P.w[1])-P.w[0])/500));let pi=P.p.findIndex(s=>s>=u);if(pi<0)pi=P.p.length-1;
   return P.base+wi*185+pi*240+wi*pi*28}
@@ -423,42 +533,64 @@ function tabelPrice(P,v){
  return P.base+Math.ceil(Math.min(w,P.w[1])/250)*22+Math.ceil(Math.min(h,P.h[1])/250)*18;
 }
 function msCount(w){return !(w>0)?2:w<=4000?2:w<=5500?3:4}
+function msCalc(P,v){const w=+v.breedte||0;if(P.type==='knikarm')return msCount(w);if(P.type==='ar'&&P.ms){if(!(w>0))return '—';const n=arParts(v);return n*P.ms(Math.ceil(w/n))}return '—'}
+const colorById=id=>COLORS.find(c=>c.id===id)||AMB_COLORS.find(c=>c.id===id);
 function fieldPrice(P,f,v){
  const val=v[f.id];
  if(f.type==='radio'){const o=f.options.find(o=>o[0]===val);return o&&o[2]||0}
  if(f.type==='check')return val?f.price:0;
- if(f.type==='color'){const c=COLORS.find(c=>c.id===val);return c?c.p:0}
+ if(f.type==='num'&&f.each)return (+val||0)*f.each;
+ if(f.type==='color'){const c=colorById(val);return c?c.p:0}
  if(f.type==='tabel')return tabelPrice(P,v);
- if(f.type==='calc'&&f.id==='msaantal')return (msCount(+v.breedte)-2)*38;
+ if(f.type==='calc'&&f.id==='msaantal'&&P.type==='knikarm')return (msCount(+v.breedte)-2)*38;
  return 0;
 }
 function unitPrice(P,v,extras){
  const vis=visOf(P,v);let t=0;sectionsFor(P).flat.forEach(f=>{if(vis[f.id])t+=fieldPrice(P,f,v)});
  (extras||[]).forEach(x=>{const a=EXTRAS.find(e=>e.code===x.code);if(a)t+=a.p*(+x.qty||0)});
- return t;
+ return Math.round(t*100)/100;
 }
 function displayVal(f,val){
  if(f.type==='radio'){const o=f.options.find(o=>o[0]===val);return o?o[1]:''}
  if(f.type==='mm')return val!==''&&val!=null?val+' mm':'';
- if(f.type==='num')return val!==''&&val!=null?val+(f.unit||''):'';
+ if(f.type==='num')return val!==''&&val!=null&&!(f.each&&!+val)?val+(f.unit?(f.unit==='st'?' st':f.unit):''):'';
  if(f.type==='check')return val?'Ja':'';
- if(f.type==='color'){const c=COLORS.find(c=>c.id===val);return c?c.label:''}
+ if(f.type==='color'){const c=colorById(val);return c?c.label:''}
  if(f.type==='fabric'){for(const k in FABRICS){const x=fabricList(k).find(i=>i.id===val);if(x)return x.label}return val||''}
+ if(f.type==='info')return '';
  return val??'';
 }
 function summaryOf(P,v,extras){
  const vis=visOf(P,v),out=[];
- sectionsFor(P).flat.forEach(f=>{if(!vis[f.id]||['ref','tabel','group','calc'].includes(f.type))return;const d=displayVal(f,v[f.id]);if(d)out.push([f.label,d])});
- if(P.type==='knikarm')out.push(['Aantal muursteunen',String(msCount(+v.breedte))]);
+ sectionsFor(P).flat.forEach(f=>{if(!vis[f.id]||['ref','tabel','group','calc','info'].includes(f.type))return;const d=displayVal(f,v[f.id]);if(d)out.push([f.label,d])});
+ if(P.type==='knikarm'||(P.type==='ar'&&P.ms))out.push(['Aantal muursteunen',String(msCalc(P,v))]);
  (extras||[]).forEach(x=>{const a=EXTRAS.find(e=>e.code===x.code);if(a)out.push(['Extra artikel',`${x.qty}× ${a.code} ${a.label}`])});
  return out;
 }
-const cfgName=(P,v)=>`${P.name}, ${+v.breedte||0}x${+(P.type==='knikarm'?v.uitval:v.hoogte)||0} mm`;
+function cfgName(P,v){
+ if(P.type==='profiel'){const pr=PROFIELEN.find(x=>x[0]===v.profiel);return `${pr?(v.profiel==='overig'?(v.profieltxt||'Afwijkend profiel'):pr[1]):'Koker/hoeklijn'}, ${+v.lengte||0} mm`}
+ return `${P.name}, ${+v.breedte||0}x${+(P.type==='knikarm'||P.type==='ar'?v.uitval:v.hoogte)||0} mm`;
+}
 function validate(P,v,extras){
  const e={},vis=visOf(P,v),K=P.type==='knikarm';
  sectionsFor(P).flat.forEach(f=>{if(!vis[f.id]||!f.req)return;const val=v[f.id];
   if(val===''||val==null||val===false||(typeof val==='number'&&isNaN(val)))e[f.id]=f.type==='radio'?'Maak een keuze.':(f.type==='color'||f.type==='fabric')?'Kies een waarde.':'Verplicht veld.'});
  const w=+v.breedte;
+ if(P.type==='profiel'){const l=+v.lengte;if(!(l>0))e.lengte='Verplicht veld.';else if(l<50||l>7000)e.lengte='Lengte moet tussen 50 en 7000 mm liggen.'}
+ else if(P.type==='ar'){
+  const n=arParts(v),u=+v.uitval;
+  if(!(w>0))e.breedte='Verplicht veld.';
+  else if(n===1&&(w<P.w[0]||w>P.w[1]))e.breedte=`Breedte moet tussen ${P.w[0]} en ${P.w[1]} mm liggen${w>P.w[1]?'. Breder? Kies koppelen met doorlopende kap (max. 7000 mm).':'.'}`;
+  else if(n>1&&w>7000)e.breedte='Maximale breedte bij koppeling is 7000 mm.';
+  else if(n>1&&(Math.ceil(w/n)<P.w[0]||Math.ceil(w/n)>P.w[1]))e.breedte=`Breedte per schermdeel (${Math.ceil(w/n)} mm) moet tussen ${P.w[0]} en ${P.w[1]} mm liggen.`;
+  if(!(u>0))e.uitval='Verplicht veld.';else if(!P.u.includes(u))e.uitval=`Uitval ${u} mm is niet leverbaar voor ${P.name}. Toegestaan: ${P.u.join(', ')} mm.`;
+  if(vis.delen&&!e.delen){const d=+v.delen;if(!(Number.isInteger(d)&&d>=2&&d<=4))e.delen='Kies 2 tot en met 4 schermdelen.'}
+  if(P.naadloos&&!e.uitval&&P.naadloos.includes(u)&&v.naadloos!=='naadloos')e.naadloos=`Uitval ${u} mm (doeklengte ${P.doek[u]} mm) is alleen mogelijk in combinatie met uni-naadloos doek.`;
+  if(vis.nogar&&!v.nogar)e.nogar='Deze doekcollectie is bij uitvalschermen niet leverbaar binnen garantie. Kies een andere collectie of bevestig dat de klant akkoord is.';
+  const x=+v.extraarm;if(v.extraarm!==''&&!(Number.isInteger(x)&&x>=0&&x<=2))e.extraarm='Kies 0, 1 of 2 extra armen.';
+  if(v.armen&&v.armen.startsWith('glij')&&+v.extraarm>0)e.extraarm='Extra windvaste armen zijn niet te combineren met glijarmen.';
+ }
+ else{
  if(!(w>0))e.breedte='Verplicht veld.';else if(w<P.w[0]||w>P.w[1])e.breedte=`Breedte moet tussen ${P.w[0]} en ${P.w[1]} mm liggen.`;
  if(K){const u=+v.uitval;
   if(!(u>0))e.uitval='Verplicht veld.';
@@ -471,7 +603,7 @@ function validate(P,v,extras){
  }else{const h=+v.hoogte;
   if(!(h>0))e.hoogte='Verplicht veld.';else if(h<P.h[0]||h>P.h[1])e.hoogte=`Hoogte moet tussen ${P.h[0]} en ${P.h[1]} mm liggen.`;
   else if(w>0&&!e.breedte){const m2=w*h/1e6;if(m2>P.maxM2)e.hoogte=`Oppervlak ${m2.toLocaleString('nl-NL',{maximumFractionDigits:2})} m² is groter dan het maximum van ${P.maxM2} m².`}
- }
+ }}
  if(vis.kanaal&&!e.kanaal){const k=+v.kanaal;if(!(Number.isInteger(k)&&k>=1&&k<=5))e.kanaal='Kies een kanaal van 1 tot en met 5.'}
  if(vis.snoer&&v.snoer==='hirsch'&&v.motor!=='io')e.snoer='Snoer met Hirschmann-stekker is alleen leverbaar met een io-motor.';
  if(vis.snoer&&v.snoer==='5z'&&v.motor!=='wt')e.snoer='5 meter zwart snoer is alleen leverbaar met een WT-motor.';
@@ -505,7 +637,10 @@ function save(){store.set('offertes',offertes);store.set('accounts',accounts);st
 if(!offertes||!accounts||!settings)seed();
 const acc=id=>accounts.find(a=>a.id===id);
 const nextOff=()=>'OFF-2026-'+(Math.max(10230,...offertes.map(o=>+o.id.split('-')[2]))+1);
-const totalsOf=o=>{const bruto=o.lines.reduce((s,l)=>s+l.unit*l.aantal,0),korting=bruto*DEALER_DISCOUNT,netto=bruto-korting,btw=netto*VAT;return{bruto,korting,netto,btw,incl:netto+btw}};
+const isIncl=l=>!!PRODUCTS.find(p=>p.id===l.productId)?.incl;
+const lineExcl=l=>(isIncl(l)?l.unit/(1+VAT):l.unit)*l.aantal;
+function toeslagOf(o){if(!o.lines.some(l=>l.productId==='profielen'))return 0;return o.lines.some(l=>l.productId!=='profielen')?TOESLAG_COMBI:TOESLAG_LOS}
+const totalsOf=o=>{const toeslag=toeslagOf(o);const bruto=o.lines.reduce((s,l)=>s+lineExcl(l),0)+toeslag/(1+VAT),korting=bruto*DEALER_DISCOUNT,netto=bruto-korting,btw=netto*VAT;return{bruto,korting,netto,btw,incl:netto+btw,toeslag}};
 
 /* ============ shell ============ */
 $('#collapse').onclick=()=>document.body.classList.toggle('mini');
@@ -550,7 +685,11 @@ Regel 2: 2 stuks Vista Screen 85, 1400 × 1800 mm dagmaat, nismontage op beton, 
  {t:'3 · Moet falen: uitval niet leverbaar',fail:1,d:`Bestel een Moneo 400 van 4000 × 3500 mm (uitval 3500 mm), wandmontage op beton, rechts, Somfy Sunea io, RAL 9016, Acryl Uni NH-U 3101. De agent hoort te melden dat 3500 mm uitval voor dit model niet leverbaar is en niet zelf een andere maat te kiezen.`},
  {t:'4 · Moet falen: snoer past niet bij motor',fail:1,d:`Configureer een Arco 300 Semi-cassette van 3500 × 2000 mm met Somfy Orea WT en een 30 cm snoer met Hirschmann-stekker. De agent hoort de foutmelding te zien en terug te koppelen in plaats van de offerte te forceren.`},
  {t:'5 · Bestaande offerte wijzigen en bestellen',d:`Open offerte OFF-2026-10231 (Fam. Jansen). Wijzig in regel 1 de kleur omkasting naar RAL 9016 Verkeerswit (glad) en sla de wijziging op. Zet de leverweek op de vroegst mogelijke week en plaats daarna de bestelling.`},
- {t:'6 · Moet falen: geen rechten',fail:1,d:`Maak een Moneo 400 van 3000 × 2000 mm en zet via "Geavanceerde invoer" een afwijkende werkmaat. De agent hoort te melden dat het dealeraccount daar geen rechten voor heeft.`},
+ {t:'6 · Moet falen: geen rechten',fail:1,d:`Maak een Moneo 400 van 3000 × 2000 mm en zet via "Geavanceerde invoer" een afwijkende werkmaat. De agent hoort te melden dat het dealeraccount daar geen rechten voor heeft.`},,
+ {t:'7 · Uitvalscherm uit het prijsboek',d:`Maak een Carré 110 van 4500 mm breed met 1200 mm uitval. Somfy Sunea io, bediening links, Smoove Origin io wandzender. Omkasting RAL 7016-SL structuurlak mat. Doek Sattler Lumera, doeknummer 5432. Stormvaste armen. Orderregelreferentie "Peters voorgevel".
+Voeg in dezelfde offerte 2 hoeklijnen 40 x 40 x 2 mm van 2400 mm toe, ook in 7016-SL. Nieuwe offerte voor CRM-account Fam. Peters, referentie "Peters voorgevel", afleveren bij de klant, leverweek zo vroeg mogelijk. Controleer daarna of de verwerkingstoeslag voor kokers en hoeklijnen € 44 is.`},
+ {t:'8 · Moet melden: Carré 95 vraagt naadloos doek',fail:1,d:`Configureer een Ambiance Carré 95 van 3000 × 1100 mm, Somfy Orea WT, bediening rechts, RAL 9016, standaard Ambiance acrylcollectie doek 8203. De agent hoort te zien dat 1100 mm uitval alleen kan met uni-naadloos doek en dat terug te vragen in plaats van het zelf aan te passen.`},
+ {t:'9 · Gekoppeld uitvalscherm',d:`Maak een Arcos, totale breedte 6400 mm in 2 delen gekoppeld met doorlopende kap, uitval 1100 mm, Somfy Sunea io rechts met Situo 1 io II, RAL 9010, doek Dickson standaard uni 6688, windvaste armen. Controleer dat de minderprijs voor de koppeling (€ 73) is verrekend.`}
 ];
 function vHome(){
  const open=offertes.filter(o=>o.status==='Concept'),best=offertes.filter(o=>o.status==='Besteld');
@@ -569,6 +708,8 @@ function offTable(list){if(!list.length)return '<p class="lead" style="margin:0"
 const ICON={knikarm:'<svg width="120" height="80" viewBox="0 0 120 80"><rect x="8" y="10" width="104" height="10" rx="2" fill="#6b6b6b"/><path d="M14 20 30 64h60l16-44Z" fill="#d4a12f" opacity=".85"/><path d="M20 22 34 62M100 22 86 62" stroke="#444" stroke-width="3"/><rect x="30" y="62" width="60" height="6" fill="#555"/></svg>',
  screen:'<svg width="120" height="80" viewBox="0 0 120 80"><rect x="28" y="6" width="64" height="9" rx="2" fill="#6b6b6b"/><rect x="31" y="15" width="58" height="56" fill="#3d3d3d" opacity=".75"/><rect x="26" y="6" width="5" height="68" fill="#888"/><rect x="89" y="6" width="5" height="68" fill="#888"/><rect x="31" y="68" width="58" height="5" fill="#555"/></svg>',
  uitval:'<svg width="120" height="80" viewBox="0 0 120 80"><rect x="22" y="8" width="76" height="9" rx="2" fill="#6b6b6b"/><path d="M26 17h68l12 40H38Z" fill="#d4a12f" opacity=".85"/><path d="M30 18 44 56M90 18 104 56" stroke="#444" stroke-width="3"/></svg>'};
+ICON.ar=ICON.uitval;
+ICON.profiel='<svg width="120" height="80" viewBox="0 0 120 80"><path d="M14 22h70v8H22v38h-8Z" fill="#8a8a8a"/><rect x="60" y="40" width="46" height="26" fill="none" stroke="#6b6b6b" stroke-width="6"/></svg>';
 let catSel='Alle';
 function vProducts(){
  const cats=['Alle',...new Set(PRODUCTS.map(p=>p.cat))];
@@ -576,7 +717,7 @@ function vProducts(){
  <div class="prods"><nav class="cats" aria-label="Categorieën">${cats.map(c=>`<button data-cat="${esc(c)}" class="${c===catSel?'on':''}">${esc(c)}</button>`).join('')}</nav>
  <div><div class="tools"><input class="txt" id="psearch" placeholder="Zoek product…" aria-label="Zoek product"></div><div class="pgrid" id="pgrid"></div></div></div></div>`;
  bindCtx();
- const draw=()=>{const q=$('#psearch').value.toLowerCase();$('#pgrid').innerHTML=PRODUCTS.filter(p=>(catSel==='Alle'||p.cat===catSel)&&(p.name+p.desc).toLowerCase().includes(q)).map(p=>`<div class="pcard"><div class="img">${ICON[p.type]}</div><div class="bd"><b>${esc(p.name)}</b><small>${esc(p.desc)}</small><small>${p.cat} · breedte ${p.w[0]}–${p.w[1]} mm</small><small>Vanaf ${eur(p.base)}</small></div><div class="ft"><button class="btn pri" data-pid="${p.id}">Configureren</button></div></div>`).join('')||'<p>Geen producten gevonden.</p>';
+ const draw=()=>{const q=$('#psearch').value.toLowerCase();$('#pgrid').innerHTML=PRODUCTS.filter(p=>(catSel==='Alle'||p.cat===catSel)&&(p.name+p.desc).toLowerCase().includes(q)).map(p=>`<div class="pcard"><div class="img">${ICON[p.type]}</div><div class="bd"><b>${esc(p.name)}</b><small>${esc(p.desc)}</small><small>${p.cat}${p.w?` · breedte ${p.w[0]}–${p.w[1]} mm`:' · per meter, vanaf 1 meter'}</small>${p.art?`<small class="mono">${esc(p.art)}</small>`:''}<small>Vanaf ${p.type==='profiel'?eur(8)+' per meter':eur(p.base)}${p.incl?' (adviesprijs incl. btw en montage)':' excl. btw'}</small></div><div class="ft"><button class="btn pri" data-pid="${p.id}">Configureren</button></div></div>`).join('')||'<p>Geen producten gevonden.</p>';
   $$('[data-pid]').forEach(b=>b.onclick=()=>{location.hash='#/configurator/'+b.dataset.pid})};
  $$('[data-cat]').forEach(b=>b.onclick=()=>{catSel=b.dataset.cat;vProducts()});$('#psearch').oninput=draw;draw();
 }
@@ -591,6 +732,7 @@ function fieldHTML(f){
   case 'mm':case 'num':return `<div class="row f" data-f="${f.id}"><div class="d"><label for="${nm}">${esc(f.label)}</label>${f.pref?`<div><span class="pref">Voorkeur = ${f.pref} mm</span></div>`:''}${f.hint?`<div class="hint">${esc(f.hint)}</div>`:''}${em}</div><div class="c"><span class="mm"><input type="number" id="${nm}" inputmode="numeric" aria-label="${esc(f.label)}"><i>${f.type==='mm'?'mm':esc(f.unit||'')}</i></span></div><div class="p"></div><div class="x"></div></div>`;
   case 'text':return `<div class="row f" data-f="${f.id}"><div class="d"><label for="${nm}">${esc(f.label)}</label>${em}</div><div class="c"><input class="txt" id="${nm}" placeholder="${esc(f.ph||'')}" autocomplete="off"></div><div class="p"></div><div class="x"></div></div>`;
   case 'tabel':return `<div class="row f" data-f="tabel"><div class="d">${esc(f.label)}</div><div class="c"></div><div class="p" id="p-tabel"></div><div class="x"></div></div>`;
+  case 'info':return `<div class="row f" data-f="${f.id}"><div class="d" style="color:var(--mute)">${esc(f.label)}</div><div class="c"></div><div class="p"></div><div class="x"></div></div>`;
   case 'calc':return `<div class="row f" data-f="${f.id}"><div class="d">${esc(f.label)}<div class="hint">Wordt bepaald door de breedte</div></div><div class="c calc" id="v-${f.id}"></div><div class="p"></div><div class="x"></div></div>`;
   case 'check':return `<label class="row f chk" data-f="${f.id}"><div class="d"><input type="checkbox" id="${nm}"><span class="lb">${esc(f.label)}</span>${f.ioOnly?'<div class="hint">Alleen met io-motor</div>':''}${em}</div><div class="c"></div><div class="p">${eur(f.price)}</div><div class="x"></div></label>`;
   case 'radio':return `<div class="sub f" data-f="${f.id}"><div class="sh2" data-toggle><span>${esc(f.label)}</span><span class="chev">${CHEV}</span></div>${em}<div class="opts" role="radiogroup" aria-label="${esc(f.label)}">${f.options.map(o=>`<label class="row opt"><div class="d"><input type="radio" name="${nm}" value="${o[0]}">${esc(o[1])}</div><div class="c"></div><div class="p">${o[2]?(o[2]>0?'':'− ')+eur(Math.abs(o[2])):''}</div><div class="x"></div></label>`).join('')}</div></div>`;
@@ -612,7 +754,7 @@ function vConfig(pid){
  <div id="cfg-body"><div class="row prod" data-f="aantal"><div class="d"><b>${esc(P.name)}</b><small>${esc(P.desc)}</small><div class="em"></div></div><div class="c"><span class="mm" style="width:64px"><input type="number" id="f-aantal" min="1" max="50" value="1" aria-label="Aantal"></span></div><div class="p" id="p-line"></div><div class="x"></div></div>${body}</div></div>
  <aside class="cfg-side" aria-label="Navigatie configuratie"><div style="display:flex;justify-content:flex-end"><button class="icon-btn" id="fullscreen" title="Volledig scherm" aria-label="Volledig scherm"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3h7v2H5v5H3Zm11 0h7v7h-2V5h-5ZM3 14h2v5h5v2H3Zm16 0h2v7h-7v-2h5Z"/></svg></button></div>
  <ul class="tree" id="tree">${secs.filter(s=>s.id!=='adv').map((s,i)=>`<li class="${i>1?'l1':''}" data-tree="${s.id}"><button type="button">${esc(s.title)}</button></li>`).join('')}</ul>
- <div class="tot"><div class="tr"><span>Totaalprijs*</span><span id="p-total"></span></div><small>*Prijzen excl. btw</small>
+ <div class="tot"><div class="tr"><span>Totaalprijs*</span><span id="p-total"></span></div><small id="p-note">*Prijzen excl. btw</small>
  ${editing?`<button class="btn pri" id="btn-save-line">Wijzigingen opslaan</button><button class="btn ghost" id="btn-cancel-edit">Annuleren</button>`:`<button class="btn pri" id="btn-offerte">${S.ctx?'Toevoegen aan offerte':'Nieuwe offerte maken'}</button><button class="btn ghost" id="btn-addcfg">Nieuwe configuratie toevoegen</button>`}</div></aside></div>`;
  bindCtx();
  // waarden zetten
@@ -633,10 +775,10 @@ function vConfig(pid){
   if(f)C.touched.add(f.dataset.f);apply()});
  cb.addEventListener('change',e=>{const f=e.target.closest('[data-f]');if(f&&f.dataset.f!=='adv')C.touched.add(f.dataset.f);apply()});
  cb.addEventListener('keydown',e=>{if(e.target.matches('.picker input,#extra-q')&&e.key==='Enter'){e.preventDefault();const first=e.target.parentElement.querySelector('li.hl,li');first&&first.click()}
-  if(e.key==='Escape'){$$('.picker').forEach(p=>p.hidden=true);$('#extra-dd').hidden=true}});
- $('#extra-q').addEventListener('focus',e=>fillExtras(e.target.value));
- $('#extra-q').addEventListener('blur',()=>setTimeout(()=>{const d=$('#extra-dd');if(d)d.hidden=true},180));
- $('#f-adv').onchange=e=>{if(e.target.checked){e.target.checked=false;$('#adv-em').textContent='Geen rechten: geavanceerde invoer (afwijkende werkmaten, productieopmerkingen) is alleen beschikbaar voor medewerkers van Nordhaven Zonwering.'}};
+  if(e.key==='Escape'){$$('.picker').forEach(p=>p.hidden=true);const d=$('#extra-dd');if(d)d.hidden=true}});
+ $('#extra-q')?.addEventListener('focus',e=>fillExtras(e.target.value));
+ $('#extra-q')?.addEventListener('blur',()=>setTimeout(()=>{const d=$('#extra-dd');if(d)d.hidden=true},180));
+ if($('#f-adv'))$('#f-adv').onchange=e=>{if(e.target.checked){e.target.checked=false;$('#adv-em').textContent='Geen rechten: geavanceerde invoer (afwijkende werkmaten, productieopmerkingen) is alleen beschikbaar voor medewerkers van Nordhaven Zonwering.'}};
  $$('#tree [data-tree]').forEach(li=>li.querySelector('button').onclick=()=>{const s=$('#sec-'+li.dataset.tree);s.classList.remove('collapsed');s.scrollIntoView({block:'start',behavior:'smooth'})});
  $('#fullscreen').onclick=()=>document.body.classList.toggle('full');
  $('#cfg-reset').onclick=()=>confirmBox('Configuratie opnieuw starten','Alle ingevulde waarden van deze configuratie worden gewist.','Opnieuw starten',()=>{S.pending=null;vConfig(pid)});
@@ -650,7 +792,7 @@ function setVal(f,val){
  if(f.type==='radio'){$$(`[name="${nm}"]`).forEach(r=>r.checked=r.value===String(val))}
  else if(f.type==='check'){const el=$('#'+nm);if(el)el.checked=!!val}
  else if(f.type==='color'||f.type==='fabric'){const b=$('#'+nm);if(!b)return;b.dataset.v=val||'';const lbl=val?displayVal(f,val):'';
-  const c=f.type==='color'&&COLORS.find(c=>c.id===val);
+  const c=f.type==='color'&&colorById(val);
   b.classList.toggle('has',!!val);b.innerHTML=val?`${c&&c.hex?`<span class="swatch" style="background:${c.hex}"></span>`:''}<b>${esc(lbl)}</b> <span style="color:var(--ochre-dk)">wijzig</span>`:`${SEARCH} Zoeken...`}
  else if(['mm','num','text','ref'].includes(f.type)){const el=$('#'+nm);if(el)el.value=val??''}
 }
@@ -672,7 +814,8 @@ function apply(){
  flat.forEach(f=>{if(!vis[f.id])return;const el=$(`#cfg-body [data-f="${f.id}"]`);if(!el)return;
   if(['mm','num','color','fabric','calc'].includes(f.type)){const pc=el.querySelector('.p');const pr=fieldPrice(P,f,v);if(pc)pc.textContent=pr?eur(pr):''}});
  $('#p-tabel').textContent=eur(tabelPrice(P,v));
- const ms=$('#v-msaantal');if(ms)ms.textContent=msCount(+v.breedte);
+ const ms=$('#v-msaantal');if(ms)ms.textContent=msCalc(P,v);
+ $('#p-note').textContent=P.incl?'*Adviesprijs incl. btw en standaardmontage (prijsboek 2026 '+P.src+')':'*Prijzen excl. btw';
  const unit=unitPrice(P,v,C.extras),tot=unit*(+v.aantal>0?+v.aantal:1);
  $('#p-line').textContent=eur(tot);$('#p-total').textContent=eur(tot);$('#cfgname').textContent=cfgName(P,v);
  const errs=validate(P,v,C.extras);C.errs=errs;
@@ -689,14 +832,14 @@ function check(){C.submitted=true;apply();const ids=Object.keys(C.errs);if(!ids.
  const id=ids[0];const el=$(`#cfg-body [data-f="${id}"]`);if(el){const s=el.closest('.sec');s&&s.classList.remove('collapsed');el.closest('.sub')?.classList.remove('collapsed');el.scrollIntoView({block:'center'})}
  toast('Configuratie is niet compleet: '+C.errs[id],1);return false}
 function togglePicker(id){const box=$(`#cfg-body [data-f="${id}"] .picker`);const open=box.hidden;$$('#cfg-body .picker').forEach(p=>p.hidden=true);if(open){box.hidden=false;const i=box.querySelector('input');i.value='';fillPicker(id,'');i.focus()}}
-function fillPicker(id,q){const v=getVals();const list=id==='kleur'?COLORS:fabricList(v.coll);q=q.toLowerCase().trim();const words=q.split(/\s+/).filter(Boolean);
+function fillPicker(id,q){const v=getVals();const fd=sectionsFor(C.P).flat.find(f=>f.id===id);const list=fd&&fd.list==='amb'?AMB_COLORS:id==='kleur'?COLORS:fabricList(v.coll);q=q.toLowerCase().trim();const words=q.split(/\s+/).filter(Boolean);
  const items=list.filter(x=>{const h=(x.label+' '+x.id).toLowerCase();return words.every(w=>h.includes(w))});
  const ul=$(`#cfg-body [data-f="${id}"] .picker ul`);ul.innerHTML=items.map((x,i)=>`<li role="option" data-v="${esc(x.id)}" class="${i===0&&q?'hl':''}">${x.hex?`<span class="swatch" style="background:${x.hex}"></span>`:''}${esc(x.label)}<small>${x.p?'+ '+eur(x.p):''}</small></li>`).join('')||'<li style="cursor:default">Geen resultaten</li>'}
 function pickValue(id,val){if(!val)return;const f=sectionsFor(C.P).flat.find(f=>f.id===id);setVal(f,val);$(`#cfg-body [data-f="${id}"] .picker`).hidden=true;C.touched.add(id);apply()}
 function fillExtras(q){q=q.toLowerCase().trim();const words=q.split(/\s+/).filter(Boolean);const dd=$('#extra-dd');const items=EXTRAS.filter(x=>words.every(w=>(x.code+' '+x.label).toLowerCase().includes(w)));
  dd.innerHTML=items.map((x,i)=>`<li role="option" data-code="${x.code}" class="${i===0&&q?'hl':''}"><span class="mono">${x.code}</span>${esc(x.label)}<small>${eur(x.p)}</small></li>`).join('')||'<li>Geen artikelen gevonden</li>';dd.hidden=false}
 function addExtra(code){if(!code)return;const ex=C.extras.find(x=>x.code===code);if(ex)ex.qty=(+ex.qty||0)+1;else C.extras.push({code,qty:1});$('#extra-q').value='';$('#extra-dd').hidden=true;C.touched.add('extra');renderExtras();apply()}
-function renderExtras(){$('#extra-list').innerHTML=C.extras.map((x,i)=>{const a=EXTRAS.find(e=>e.code===x.code);return `<tr><td><span class="mono">${a.code}</span> ${esc(a.label)}</td><td class="num"><input type="number" class="txt" min="1" value="${x.qty}" data-xqty="${i}" aria-label="Aantal ${esc(a.label)}"></td><td class="num">${eur(a.p*(+x.qty||0))}</td><td style="width:36px"><button class="icon-btn" data-xdel="${i}" aria-label="Verwijder ${esc(a.label)}" title="Verwijderen">✕</button></td></tr>`}).join('')||`<tr><td colspan="4" style="color:var(--mute)">Geen losse artikelen toegevoegd.</td></tr>`}
+function renderExtras(){const xl=$('#extra-list');if(!xl)return;xl.innerHTML=C.extras.map((x,i)=>{const a=EXTRAS.find(e=>e.code===x.code);return `<tr><td><span class="mono">${a.code}</span> ${esc(a.label)}</td><td class="num"><input type="number" class="txt" min="1" value="${x.qty}" data-xqty="${i}" aria-label="Aantal ${esc(a.label)}"></td><td class="num">${eur(a.p*(+x.qty||0))}</td><td style="width:36px"><button class="icon-btn" data-xdel="${i}" aria-label="Verwijder ${esc(a.label)}" title="Verwijderen">✕</button></td></tr>`}).join('')||`<tr><td colspan="4" style="color:var(--mute)">Geen losse artikelen toegevoegd.</td></tr>`}
 function currentLine(){const v=getVals();return{productId:C.P.id,values:v,extras:JSON.parse(JSON.stringify(C.extras)),aantal:v.aantal,unit:unitPrice(C.P,v,C.extras)}}
 
 /* offerte vanuit configurator */
@@ -777,9 +920,9 @@ function vOfferte(id){
  <button class="btn sm noprint" id="b-print">Afdrukken</button><button class="btn sm noprint" id="b-dup">Dupliceren</button>${ro?'':'<button class="btn sm noprint" id="b-edit">Gegevens wijzigen</button><button class="btn sm danger noprint" id="b-del">Verwijderen</button>'}</div>
  <div class="split"><div>
  <div class="card"><h2>Regels</h2><table class="grid"><thead><tr><th>#</th><th>Omschrijving</th><th class="num">Aantal</th><th class="num">Prijs p/st</th><th class="num">Totaal</th><th class="noprint"></th></tr></thead><tbody>
- ${o.lines.map((l,i)=>{const P=PRODUCTS.find(p=>p.id===l.productId);const sum=summaryOf(P,l.values,l.extras);return `<tr><td>${i+1}</td><td><b>${esc(cfgName(P,l.values))}</b>${l.values.ref?` · <i>${esc(l.values.ref)}</i>`:''}<div class="cfgsum">${sum.map(([k,v])=>`${esc(k)}: ${esc(v)}`).join(' · ')}</div></td><td class="num">${l.aantal}</td><td class="num">${eur(l.unit)}</td><td class="num">${eur(l.unit*l.aantal)}</td><td class="noprint" style="white-space:nowrap">${ro?'':`<button class="btn sm" data-ledit="${i}">Wijzigen</button> <button class="btn sm danger" data-ldel="${i}" aria-label="Regel ${i+1} verwijderen">✕</button>`}</td></tr>`}).join('')||'<tr><td colspan="6" style="color:var(--mute)">Nog geen regels.</td></tr>'}
+ ${o.lines.map((l,i)=>{const P=PRODUCTS.find(p=>p.id===l.productId);if(!P)return `<tr><td>${i+1}</td><td colspan="5">Product ${esc(l.productId)} bestaat niet meer.</td></tr>`;const sum=summaryOf(P,l.values,l.extras);return `<tr><td>${i+1}</td><td><b>${esc(cfgName(P,l.values))}</b>${l.values.ref?` · <i>${esc(l.values.ref)}</i>`:''}<div class="cfgsum">${sum.map(([k,v])=>`${esc(k)}: ${esc(v)}`).join(' · ')}</div></td><td class="num">${l.aantal}</td><td class="num">${eur(l.unit)}${P.incl?'<div class="hint">incl. btw</div>':''}</td><td class="num">${eur(l.unit*l.aantal)}</td><td class="noprint" style="white-space:nowrap">${ro?'':`<button class="btn sm" data-ledit="${i}">Wijzigen</button> <button class="btn sm danger" data-ldel="${i}" aria-label="Regel ${i+1} verwijderen">✕</button>`}</td></tr>`}).join('')||'<tr><td colspan="6" style="color:var(--mute)">Nog geen regels.</td></tr>'}
  </tbody></table>${ro?'':'<div style="margin-top:10px" class="noprint"><button class="btn" id="b-addline">+ Configuratie toevoegen</button></div>'}
- <div class="totals" style="margin-top:12px"><div><span>Subtotaal bruto</span><span>${eur(t.bruto)}</span></div><div><span>Dealerkorting ${DEALER_DISCOUNT*100}%</span><span>− ${eur(t.korting)}</span></div><div><span>Netto excl. btw</span><span>${eur(t.netto)}</span></div><div><span>Btw 21%</span><span>${eur(t.btw)}</span></div><div class="big"><span>Totaal incl. btw</span><span>${eur(t.incl)}</span></div></div></div></div>
+ ${o.lines.some(isIncl)?'<p class="hint" style="margin:10px 0 0">Regels uit het Ambiance prijsboek staan als adviesprijs incl. btw en standaardmontage; in de totalen zijn ze omgerekend naar excl. btw.</p>':''}<div class="totals" style="margin-top:12px">${t.toeslag?`<div><span>Verwerkingstoeslag kokers/hoeklijnen (${eur(t.toeslag)} incl. btw)</span><span>${eur(t.toeslag/(1+VAT))}</span></div>`:''}<div><span>Subtotaal excl. btw</span><span>${eur(t.bruto)}</span></div><div><span>Dealerkorting ${DEALER_DISCOUNT*100}%</span><span>− ${eur(t.korting)}</span></div><div><span>Netto excl. btw</span><span>${eur(t.netto)}</span></div><div><span>Btw 21%</span><span>${eur(t.btw)}</span></div><div class="big"><span>Totaal incl. btw</span><span>${eur(t.incl)}</span></div></div></div></div>
  <div><div class="card"><h2>Gegevens</h2><dl class="kv"><dt>Referentie</dt><dd>${esc(o.ref)}</dd><dt>Klant</dt><dd>${esc(a?.naam||'—')}${a?`<br><span class="hint">${esc(a.straat)} ${esc(a.nr)}, ${esc(a.pc)} ${esc(a.plaats)}${a.tel?' · '+esc(a.tel):''}</span>`:''}</dd><dt>Aangemaakt</dt><dd>${o.created}</dd><dt>Leverweek</dt><dd>${o.leverweek?fmtWeek(o.leverweek):'<span style="color:var(--err)">Nog niet ingevuld</span>'}</dd><dt>Levering</dt><dd>${lev}${o.adres?`<br><span class="hint">${esc(o.adres.straat)} ${esc(o.adres.nr)}, ${esc(o.adres.pc)} ${esc(o.adres.plaats)}</span>`:''}</dd><dt>Opmerking</dt><dd>${esc(o.opm)||'—'}</dd></dl></div>
  ${ro?'':`<div class="card noprint"><h2>Bestellen</h2><label class="chk" style="display:flex;gap:6px;margin-bottom:6px"><input type="checkbox" id="b-maten"> Maten zijn ingemeten en gecontroleerd</label><label class="chk" style="display:flex;gap:6px;margin-bottom:10px"><input type="checkbox" id="b-akk"> Ik ga akkoord met de leveringsvoorwaarden</label><div class="em" id="b-err"></div><button class="btn pri" id="b-order" style="width:100%">Offerte bestellen</button></div>`}</div></div></div>`;
  $('#b-print').onclick=()=>window.print();
@@ -824,8 +967,8 @@ function vTemplates(){
  $$('[data-tdel]').forEach(b=>b.onclick=()=>{templates.splice(+b.dataset.tdel,1);save();vTemplates()});
 }
 function vProps(){
- const rows=[];const seen={};PRODUCTS.forEach(P=>sectionsFor(P).flat.forEach(f=>{if(['ref','tabel','group'].includes(f.type))return;const k=f.id;if(!seen[k]){seen[k]={f,prods:[],sec:sectionsFor(P).secs.find(s=>s.id===f.secId)?.title};rows.push(seen[k])}seen[k].prods.push(P.name)}));
- const tl={mm:'Maat (mm)',num:'Getal',radio:'Keuzelijst',check:'Ja/nee',color:'Kleur (zoeken)',fabric:'Doek (zoeken)',text:'Tekst',calc:'Berekend'};
+ const rows=[];const seen={};PRODUCTS.forEach(P=>sectionsFor(P).flat.forEach(f=>{if(['ref','tabel','group','info'].includes(f.type))return;const k=f.id;if(!seen[k]){seen[k]={f,prods:[],sec:sectionsFor(P).secs.find(s=>s.id===f.secId)?.title};rows.push(seen[k])}seen[k].prods.push(P.name)}));
+ const tl={info:'Info',mm:'Maat (mm)',num:'Getal',radio:'Keuzelijst',check:'Ja/nee',color:'Kleur (zoeken)',fabric:'Doek (zoeken)',text:'Tekst',calc:'Berekend'};
  view.innerHTML=crumb([['Offertes','#/offertes'],['Eigenschappen']])+`<div class="page"><h1>Eigenschappen</h1><p class="lead">Alle eigenschappen die in de configurator voorkomen (alleen-lezen).</p><table class="grid"><thead><tr><th>Code</th><th>Omschrijving</th><th>Onderdeel</th><th>Type</th><th>Verplicht</th><th>Producten</th></tr></thead><tbody>${rows.map(r=>`<tr><td class="mono">${r.f.id}</td><td>${esc(r.f.label)}</td><td>${esc(r.sec||'')}</td><td>${tl[r.f.type]||r.f.type}</td><td>${r.f.req?'Ja':'Nee'}</td><td>${esc(r.prods.join(', '))}</td></tr>`).join('')}</tbody></table></div>`;
 }
 
@@ -870,12 +1013,16 @@ function vSettings(){
   d.pc=d.pc.toUpperCase().replace(/^(\d{4})\s?/,'$1 ');d.levering=$('[name="s-lev"]:checked').value;d.taal=$('#s-taal').value;settings=d;save();toast(d.taal==='en'?'Instellingen opgeslagen. (Engelse weergave is in de testomgeving niet beschikbaar.)':'Instellingen opgeslagen.')};
 }
 function vMaster(tab){
- const tabs={producten:'Producten',kleuren:'Kleuren',doeken:'Doeken',artikelen:'Losse artikelen'};
+ const tabs={producten:'Producten',prijstabellen:'Prijstabellen uitvalschermen',kleuren:'Kleuren',doeken:'Doeken',artikelen:'Losse artikelen'};
  let table='';
- if(tab==='producten')table=`<table class="grid"><thead><tr><th>Code</th><th>Product</th><th>Categorie</th><th>Breedte</th><th>Uitval / hoogte</th><th class="num">Vanafprijs</th></tr></thead><tbody>${PRODUCTS.map(p=>`<tr><td class="mono">${p.id.toUpperCase()}</td><td>${esc(p.name)}</td><td>${p.cat}</td><td>${p.w[0]}–${p.w[1]} mm</td><td>${p.p?'uitval '+p.p.join(' / ')+' mm':'hoogte '+p.h[0]+'–'+p.h[1]+' mm (max. '+p.maxM2+' m²)'}</td><td class="num">${eur(p.base)}</td></tr>`).join('')}</tbody></table>`;
+ if(tab==='producten')table=`<table class="grid"><thead><tr><th>Code</th><th>Product</th><th>Categorie</th><th>Breedte</th><th>Uitval / hoogte</th><th class="num">Vanafprijs</th></tr></thead><tbody>${PRODUCTS.map(p=>`<tr><td class="mono">${esc(p.art||p.id.toUpperCase())}</td><td>${esc(p.name)}</td><td>${p.cat}</td><td>${p.w?p.w[0]+'–'+p.w[1]+' mm':'—'}</td><td>${p.type==='profiel'?'lengte per stuk':p.u?'uitval '+p.u.join(' / ')+' mm':p.p?'uitval '+p.p.join(' / ')+' mm':'hoogte '+p.h[0]+'–'+p.h[1]+' mm (max. '+p.maxM2+' m²)'}</td><td class="num">${p.type==='profiel'?eur(8)+' /m':eur(p.base)}${p.incl?' <span class="hint">incl. btw</span>':''}</td></tr>`).join('')}</tbody></table>`;
  if(tab==='kleuren')table=`<table class="grid"><thead><tr><th></th><th>Kleur</th><th>Afwerking</th><th class="num">Meerprijs</th></tr></thead><tbody>${COLORS.map(c=>`<tr><td style="width:30px">${c.hex?`<span class="swatch" style="display:inline-block;background:${c.hex}"></span>`:''}</td><td>${esc(c.label.replace(/ \(.*\)$/,''))}</td><td>${c.id.split('-')[1]}</td><td class="num">${c.p?eur(c.p):'—'}</td></tr>`).join('')}</tbody></table>`;
  if(tab==='doeken')table=`<table class="grid"><thead><tr><th>Doeknummer</th><th>Kleur</th><th>Collectie</th><th>Voor</th></tr></thead><tbody>${Object.entries(FABRICS).flatMap(([k,f])=>f.items.map(([n,l])=>`<tr><td class="mono">${f.pre} ${n}</td><td>${esc(l)}</td><td>${esc(f.name)}</td><td>${['sc3','sc5','bo'].includes(k)?'Screens':'Knikarm- en uitvalschermen'}</td></tr>`)).join('')}</tbody></table>`;
  if(tab==='artikelen')table=`<table class="grid"><thead><tr><th>Artikelcode</th><th>Omschrijving</th><th class="num">Prijs</th></tr></thead><tbody>${EXTRAS.map(x=>`<tr><td class="mono">${x.code}</td><td>${esc(x.label)}</td><td class="num">${eur(x.p)}</td></tr>`).join('')}</tbody></table>`;
+ if(tab==='kleuren')table+=`<h2 style="margin-top:18px">Ambiance kleurencollectie (uitvalschermen, kokers en hoeklijnen)</h2><p class="lead">192 RAL-kleuren en 14 structuurlakken, zonder meerprijs (prijsboek p. 12).</p><div class="card" style="columns:6 140px;font-size:12px">${AMB_COLORS.map(c=>`<div>${esc(c.label)}</div>`).join('')}</div>`;
+ if(tab==='doeken')table+=`<h2 style="margin-top:18px">Doekcollecties uitvalschermen (prijsboek p. 11)</h2><table class="grid"><thead><tr><th>Collectie</th><th>Prijsgroep</th><th class="num">Meerprijs per scherm</th></tr></thead><tbody>${AR_DOEK.map(([k,l,g])=>`<tr><td>${esc(l)}</td><td>${g===null?'<span style="color:var(--err)">Niet leverbaar binnen garantie</span>':g==='std'?'Standaard':g}</td><td class="num">${g?eur(DOEKGROEP[g]):'—'}</td></tr>`).join('')}</tbody></table>`;
+ if(tab==='artikelen')table+=`<h2 style="margin-top:18px">Kokers en hoeklijnen (prijsboek p. 319)</h2><p class="lead">In kleur, berekend vanaf 1 meter. Verwerkingstoeslag per opdracht ${eur(TOESLAG_LOS)}, of ${eur(TOESLAG_COMBI)} in combinatie met een compleet systeem/product. Prijzen incl. btw.</p><table class="grid"><thead><tr><th>Profiel</th><th class="num">Prijs per meter</th></tr></thead><tbody>${PROFIELEN.map(([k,l,pr])=>`<tr><td>${esc(l)}</td><td class="num">${pr?eur(pr):'Op aanvraag'}</td></tr>`).join('')}</tbody></table>`;
+ if(tab==='prijstabellen')table=PRODUCTS.filter(p=>p.type==='ar').map(p=>`<div class="card" style="overflow:auto"><h2>${esc(p.name)} <span class="mono" style="color:var(--mute);font-weight:400">${esc(p.art)}</span></h2><table class="grid"><thead><tr><th>Uitval</th><th>Doek</th>${p.cols.map(c=>`<th class="num">${c}</th>`).join('')}</tr></thead><tbody>${p.u.map(u=>`<tr><td>${u}</td><td>${p.doek[u]}${p.naadloos&&p.naadloos.includes(u)?' *':''}</td>${p.rows[u].map(x=>`<td class="num">${x}</td>`).join('')}</tr>`).join('')}${p.ms?`<tr><td colspan="2"><b>Muursteunen</b></td>${p.cols.map(c=>`<td class="num">${p.ms(c)}</td>`).join('')}</tr>`:''}</tbody></table>${p.naadloos?'<p class="hint">* Alleen mogelijk i.c.m. uni-naadloos doek.</p>':''}<p class="hint">Inclusief Sunea io motor, 2 windvaste veerarmen, standaard doek uit Ambiance acrylcollectie, omkasting uit Ambiance kleurencollectie, Somfy Situo 1 io II of Smoove Origin io en standaardmontage. Adviesprijzen incl. btw (prijsboek 2026 ${p.src}).</p></div>`).join('');
  view.innerHTML=crumb([['Master Data','#/masterdata/producten'],[tabs[tab]||'']])+`<div class="page"><h1>${tabs[tab]||''}</h1><p class="lead">Stamgegevens van Nordhaven Zonwering (alleen-lezen voor dealers). Prijzen zijn fictief en excl. btw.</p>${table}</div>`;
 }
 route();
