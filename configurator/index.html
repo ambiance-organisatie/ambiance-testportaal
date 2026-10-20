@@ -164,20 +164,6 @@ main#view{flex:1;min-width:0;display:flex;flex-direction:column}
 .banner{margin:0;padding:8px 12px;font-size:12.5px;border-bottom:1px solid}
 .banner.err{background:var(--err-soft);border-color:#f5c2be;color:var(--err)}
 .banner.ok{background:var(--ok-soft);border-color:#b7dfba;color:var(--ok)}
-.warnbox{border:1px solid #e9c46a;background:#fff8e1;color:#5c3d00;padding:9px 12px;font-size:12.5px;margin:0}
-.warnbox b{display:block;margin-bottom:3px}
-.warnbox ul{margin:0;padding-left:18px}
-.warnbox li{margin:2px 0}
-.ack{display:flex;gap:6px;align-items:flex-start;margin-top:8px;font-weight:600}
-.missing{border-top:1px solid var(--line);margin-top:8px;padding-top:8px;max-height:240px;overflow:auto;font-size:12px}
-.missing b{display:block;font-size:12px;margin-bottom:2px}
-.missing ul{list-style:none;margin:0 0 6px;padding:0}
-.missing li button{border:0;background:none;color:var(--err);padding:1px 0;text-align:left;font-size:12px}
-.missing li button:hover{text-decoration:underline}
-.missing .okmsg{color:var(--ok)}
-.sumtab{width:100%;border-collapse:collapse;font-size:12.5px;margin:6px 0 10px}
-.sumtab td{border-bottom:1px solid var(--line-2);padding:5px 4px;vertical-align:top}
-.sumtab .num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
 .banner.info{background:#e8f1fb;border-color:#bcd5f1;color:#0d4a8f}
 
 /* pagina's */
@@ -326,10 +312,6 @@ const fmtWeek=w=>w?('week '+parseInt(w.split('-W')[1],10)+', '+w.split('-W')[0])
 const today=()=>new Date().toLocaleDateString('nl-NL',{day:'2-digit',month:'2-digit',year:'numeric'});
 const PC=/^[1-9][0-9]{3}\s?[A-Za-z]{2}$/;
 const DEALER_DISCOUNT=0.32, VAT=0.21;
-function weekRange(w){const [y,n]=w.split('-W').map(Number);const j4=new Date(y,0,4);const mon=new Date(y,0,4-((j4.getDay()+6)%7)+(n-1)*7);const fri=new Date(mon);fri.setDate(mon.getDate()+4);return{mon,fri}}
-function levertijdTxt(w){if(!w)return 'Nog geen leverweek gekozen.';const {mon,fri}=weekRange(w);const wk=Math.max(0,Math.round((mon-new Date())/(7*864e5)));const f=d=>d.toLocaleDateString('nl-NL',{day:'numeric',month:'long',year:'numeric'});return `${fmtWeek(w)}: ${f(mon)} t/m ${f(fri)}, over ongeveer ${wk} ${wk===1?'week':'weken'}. De levertijd is minimaal 3 weken na bestelling.`}
-const parseNl=d=>{const [dd,mm,yy]=String(d||'').split('-').map(Number);return new Date(yy,mm-1,dd)};
-const warnHTML=(ws,title='Let op: controleer dit voordat je verder gaat')=>ws&&ws.length?`<div class="warnbox" role="alert" aria-live="polite" data-warnings="${ws.length}"><b>${esc(title)} (${ws.length})</b><ul>${ws.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`:'';
 
 /* ============ stamdata (fictief) ============ */
 const PRODUCTS=[
@@ -589,45 +571,6 @@ function summaryOf(P,v,extras){
 function cfgName(P,v){
  if(P.type==='profiel'){const pr=PROFIELEN.find(x=>x[0]===v.profiel);return `${pr?(v.profiel==='overig'?(v.profieltxt||'Afwijkend profiel'):pr[1]):'Koker/hoeklijn'}, ${+v.lengte||0} mm`}
  return `${P.name}, ${+v.breedte||0}x${+(P.type==='knikarm'||P.type==='ar'?v.uitval:v.hoogte)||0} mm`;
-}
-function lineWarnings(P,v,extras){
- const w=[];
- [['breedte','Breedte'],['uitval','Uitval'],['hoogte','Hoogte'],['lengte','Lengte']].forEach(([k,l])=>{const x=+v[k];if(!(x>0))return;
-  if(x<(k==='lengte'?100:500))w.push(`${l} ${x} mm is erg klein. Is dit in centimeters bedoeld (${x*10} mm)?`);
-  if(x>12000)w.push(`${l} ${x} mm is erg groot. Staat er een nul te veel?`)});
- if(P.type==='screen'&&+v.breedte>0&&+v.hoogte>0&&(+v.hoogte>3*v.breedte||+v.breedte>4*v.hoogte))w.push('De verhouding tussen breedte en hoogte is ongebruikelijk. Zijn de maten omgedraaid?');
- const a=+v.aantal||1,lim={knikarm:3,profiel:10}[P.type]||12;if(a>lim)w.push(`${a} stuks op één regel is veel voor dit product. Klopt het aantal?`);
- const tot=unitPrice(P,v,extras)*a,incl=P.incl?tot:tot*(1+VAT);if(incl>15000)w.push(`Deze regel komt op ${eur(incl)} incl. btw. Laat een collega meekijken voordat je bestelt.`);
- if(P.type==='profiel'&&+v.lengte>5000)w.push('Langer dan de handelslengte van 5 meter: controleer of dit leverbaar is.');
- if((v.bed==='io'||v.motor==='io')&&v.zender==='geen')w.push('Er gaat geen handzender mee. Controleer of de klant al een io-zender heeft.');
- if(v.bed==='wt'||v.motor==='wt')w.push('Somfy Orea WT werkt op een wandschakelaar: de klant krijgt geen afstandsbediening.');
- if(v.nogar)w.push('Gekozen doek valt buiten de garantie: zorg dat het akkoord van de klant op papier staat.');
- return w;
-}
-function offerteWarnings(o,draft){
- const w=[];const t=totalsOf(o);const brutoIncl=t.bruto*(1+VAT);
- if(brutoIncl>30000)w.push(`Het orderbedrag is ${eur(brutoIncl)} incl. btw (adviesprijs). Laat een collega meekijken voordat je bestelt.`);
- if(o.leverweek){const weeks=(weekRange(o.leverweek).mon-new Date())/(7*864e5);if(weeks>26)w.push(`Leverweek ${fmtWeek(o.leverweek)} ligt meer dan een half jaar vooruit. Klopt het jaartal?`)}
- const stuks=o.lines.reduce((s,l)=>s+(l.productId==='profielen'?0:+l.aantal||0),0);if(stuks>25)w.push(`De offerte bevat ${stuks} schermen. Dat is veel voor één adres: klopt dit?`);
- const key=l=>[l.productId,+l.values.breedte||0,+l.values.uitval||+l.values.hoogte||+l.values.lengte||0].join('|');
- offertes.forEach(x=>{if(x===o||x.id===o.id||x.accountId!==o.accountId)return;if((new Date()-parseNl(x.created))/864e5>14)return;
-  o.lines.forEach(m=>{if(x.lines.some(l=>key(l)===key(m))){const P=PRODUCTS.find(p=>p.id===m.productId);w.push(`Offerte ${x.id} van dezelfde klant bevat al ${P?cfgName(P,m.values):'deze configuratie'}. Mogelijk een dubbele order.`)}})});
- o.lines.forEach((l,i)=>{const j=o.lines.findIndex(m=>key(m)===key(l));if(j<i)w.push(`Regel ${i+1} heeft hetzelfde product en dezelfde maten als regel ${j+1}. Is dit dubbel ingevoerd? Gebruik anders het aantal.`)});
- o.lines.forEach((l,i)=>{const P=PRODUCTS.find(p=>p.id===l.productId);if(P)lineWarnings(P,l.values,l.extras).forEach(m=>w.push(`Regel ${i+1}: ${m}`))});
- return [...new Set(w)];
-}
-function summaryHTML(o,accName){
- const t=totalsOf(o);const lev={dealer:'Afleveren bij dealer',klant:'Afleveren bij eindklant',afhalen:'Afhalen bij Nordhaven Zonwering (Nieuwegein)'}[o.levering]||'—';
- return `<table class="sumtab"><tbody>${o.lines.map((l,i)=>{const P=PRODUCTS.find(p=>p.id===l.productId);return `<tr><td>${i+1}</td><td><b>${esc(P?cfgName(P,l.values):l.productId)}</b>${l.values.ref?` · ${esc(l.values.ref)}`:''}</td><td class="num">${l.aantal}×</td><td class="num">${eur(l.unit*l.aantal)}${P&&P.incl?' <span class="hint">incl. btw</span>':''}</td></tr>`}).join('')}
- ${t.toeslag?`<tr><td></td><td>Verwerkingstoeslag kokers/hoeklijnen</td><td></td><td class="num">${eur(t.toeslag)} <span class="hint">incl. btw</span></td></tr>`:''}
- <tr><td></td><td>Totaal adviesprijs</td><td></td><td class="num">${eur(t.bruto*(1+VAT))} <span class="hint">incl. btw</span></td></tr><tr><td></td><td><b>Netto na dealerkorting ${DEALER_DISCOUNT*100}%</b></td><td></td><td class="num"><b>${eur(t.incl)}</b> <span class="hint">incl. btw</span></td></tr></tbody></table>
- <div class="box"><dl class="kv"><dt>Klant</dt><dd>${esc(accName||'—')}</dd><dt>Referentie</dt><dd>${esc(o.ref)}</dd><dt>Levering</dt><dd>${lev}${o.adres?`<br><span class="hint">${esc(o.adres.straat)} ${esc(o.adres.nr)}, ${esc(o.adres.pc)} ${esc(o.adres.plaats)}</span>`:''}</dd><dt>Levertijd</dt><dd><b>${esc(levertijdTxt(o.leverweek))}</b></dd></dl></div>`;
-}
-function confirmStep({title,intro,o,accName,warnings,okLabel,onOk}){
- openModal(title,`<p style="margin:0 0 8px">${intro}</p>${summaryHTML(o,accName)}${warnings.length?`<div style="margin-top:10px">${warnHTML(warnings)}<label class="ack"><input type="checkbox" id="cs-ack"> Ik heb de waarschuwingen gecontroleerd en wil toch doorgaan</label><div class="em" id="cs-err"></div></div>`:''}`,
- `<button class="btn" id="cs-back">Terug</button><button class="btn pri" id="cs-ok">${esc(okLabel)}</button>`);
- $('#cs-back').onclick=closeModal;
- $('#cs-ok').onclick=()=>{if(warnings.length&&!$('#cs-ack').checked){$('#cs-err').textContent='Vink eerst aan dat je de waarschuwingen hebt gecontroleerd.';return}closeModal();onOk()};
 }
 function validate(P,v,extras){
  const e={},vis=visOf(P,v),K=P.type==='knikarm';
@@ -916,11 +859,10 @@ function vConfig(pid){
   const inner=s.special==='extras'?`<div class="f" data-f="extra"><div class="row"><div class="d rel"><input class="txt" id="extra-q" placeholder="Artikel zoeken op code of omschrijving…" autocomplete="off" aria-label="Los artikel zoeken" style="max-width:370px"><ul class="dd" id="extra-dd" hidden role="listbox"></ul><div class="em"></div></div><div class="c"></div><div class="p"></div><div class="x"></div></div><table class="xtable"><tbody id="extra-list"></tbody></table></div>`:s.fields.map(fieldHTML).join('');
   return `<div class="sec" id="sec-${s.id}" data-sec="${s.id}"><div class="sh" data-toggle><span>${esc(s.title)}</span><span class="chev">${CHEV}</span></div><div class="sb">${inner}</div></div>`}).join('');
  view.innerHTML=crumb([['Order Entry','#/order-entry'],['Productoverzicht','#/order-entry'],['Configuratienaam: <b id="cfgname"></b>']],` <button class="icon-btn" id="cfg-reset" title="Configuratie opnieuw starten" aria-label="Configuratie opnieuw starten"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 5V2L7 6l5 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7Z"/></svg></button><span class="sp"></span><button class="lnk" id="save-tpl">Opslaan als sjabloon</button>`)
- +ctxBanner()+`<div id="cfg-banner"></div><div id="cfg-warn"></div><div class="cfg"><div class="cfg-main"><div class="thead"><span>Omschrijving</span><span>Aantal</span><span>Totaalprijs*</span><span></span></div>
+ +ctxBanner()+`<div id="cfg-banner"></div><div class="cfg"><div class="cfg-main"><div class="thead"><span>Omschrijving</span><span>Aantal</span><span>Totaalprijs*</span><span></span></div>
  <div id="cfg-body"><div class="row prod" data-f="aantal"><div class="d"><b>${esc(P.name)}</b><small>${esc(P.desc)}</small><div class="em"></div></div><div class="c"><span class="mm" style="width:64px"><input type="number" id="f-aantal" min="1" max="50" value="1" aria-label="Aantal"></span></div><div class="p" id="p-line"></div><div class="x"></div></div>${body}</div></div>
  <aside class="cfg-side" aria-label="Navigatie configuratie"><div style="display:flex;justify-content:flex-end"><button class="icon-btn" id="fullscreen" title="Volledig scherm" aria-label="Volledig scherm"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3h7v2H5v5H3Zm11 0h7v7h-2V5h-5ZM3 14h2v5h5v2H3Zm16 0h2v7h-7v-2h5Z"/></svg></button></div>
  <ul class="tree" id="tree">${secs.filter(s=>s.id!=='adv').map((s,i)=>`<li class="${i>1?'l1':''}" data-tree="${s.id}"><button type="button">${esc(s.title)}</button></li>`).join('')}</ul>
- <div class="missing" id="missing" aria-live="polite"></div>
  <div class="tot"><div class="tr"><span>Totaalprijs*</span><span id="p-total"></span></div><small id="p-note">*Prijzen excl. btw</small>
  ${editing?`<button class="btn pri" id="btn-save-line">Wijzigingen opslaan</button><button class="btn ghost" id="btn-cancel-edit">Annuleren</button>`:`<button class="btn pri" id="btn-offerte">${S.ctx?'Toevoegen aan offerte':'Nieuwe offerte maken'}</button><button class="btn ghost" id="btn-addcfg">Nieuwe configuratie toevoegen</button>`}</div></aside></div>`;
  bindCtx();
@@ -948,7 +890,6 @@ function vConfig(pid){
  if($('#f-adv'))$('#f-adv').onchange=e=>{if(e.target.checked){e.target.checked=false;$('#adv-em').textContent='Geen rechten: geavanceerde invoer (afwijkende werkmaten, productieopmerkingen) is alleen beschikbaar voor medewerkers van Nordhaven Zonwering.'}};
  $$('#tree [data-tree]').forEach(li=>li.querySelector('button').onclick=()=>{const s=$('#sec-'+li.dataset.tree);s.classList.remove('collapsed');s.scrollIntoView({block:'start',behavior:'smooth'})});
  $('#fullscreen').onclick=()=>document.body.classList.toggle('full');
- $('#missing').onclick=e=>{const b=e.target.closest('[data-goto-f]');if(!b)return;const el=$(`#cfg-body [data-f="${b.dataset.gotoF}"]`);if(!el)return;el.closest('.sec')?.classList.remove('collapsed');el.closest('.sub')?.classList.remove('collapsed');el.classList.remove('collapsed');el.scrollIntoView({block:'center'});const i=el.querySelector('input,button.search');i&&i.focus()};
  $('#cfg-reset').onclick=()=>confirmBox('Configuratie opnieuw starten','Alle ingevulde waarden van deze configuratie worden gewist.','Opnieuw starten',()=>{S.pending=null;vConfig(pid)});
  $('#save-tpl').onclick=saveTemplate;
  if(editing){$('#btn-save-line').onclick=saveLine;$('#btn-cancel-edit').onclick=()=>{const id=S.ctx.offerteId;S.ctx=null;location.hash='#/offertes/'+id}}
@@ -994,11 +935,6 @@ function apply(){
  // fouten in de breedte ontstaan ook door uitval: altijd tonen als beide aangeraakt
  secs.forEach(s=>{const li=$(`#tree [data-tree="${s.id}"]`);if(!li)return;const bad=showAll&&Object.keys(errs).some(id=>{const f=flat.find(x=>x.id===id);return (f&&f.secId===s.id)||(id==='extra'&&s.id==='extra')});li.classList.toggle('bad',bad)});
  const bn=$('#cfg-banner');const n=Object.keys(errs).length;
- const REQ=['Verplicht veld.','Maak een keuze.','Kies een waarde.'];const lab=k=>(flat.find(f=>f.id===k)||{}).label||{aantal:'Aantal',extra:'Losse artikelen'}[k]||k;
- const ord=k=>{const i=flat.findIndex(f=>f.id===k);return i<0?(k==='aantal'?-1:999):i};const ents=Object.entries(errs).sort((x,y)=>ord(x[0])-ord(y[0]));const miss=ents.filter(([k,m])=>REQ.includes(m)),bad=ents.filter(([k,m])=>!REQ.includes(m));
- $('#missing').innerHTML=(miss.length?`<b>Nog in te vullen (${miss.length})</b><ul>${miss.map(([k])=>`<li><button type="button" data-goto-f="${k}">${esc(lab(k))}</button></li>`).join('')}</ul>`:'<span class="okmsg">Alle verplichte velden zijn ingevuld.</span>')
-  +(bad.length?`<b style="margin-top:6px">Klopt niet (${bad.length})</b><ul>${bad.map(([k,m])=>`<li><button type="button" data-goto-f="${k}">${esc(lab(k))}: ${esc(m)}</button></li>`).join('')}</ul>`:'');
- $('#cfg-warn').innerHTML=warnHTML(lineWarnings(P,v,C.extras));
  bn.innerHTML=showAll&&n?`<p class="banner err">De configuratie is niet compleet: ${n} ${n===1?'veld vraagt':'velden vragen'} aandacht. Controleer de rood gemarkeerde onderdelen.</p>`:'';
 }
 function check(){C.submitted=true;apply();const ids=Object.keys(C.errs);if(!ids.length)return true;
@@ -1018,7 +954,7 @@ function currentLine(){const v=getVals();return{productId:C.P.id,values:v,extras
 /* offerte vanuit configurator */
 function offerteModal(opts={}){
  const line=opts.noLine?null:currentLine();const s=settings;
- openModal('Nieuwe offerte maken',`<div id="o-form"><div class="fg">
+ openModal('Nieuwe offerte maken',`<div class="fg">
   <div class="fld full"><label for="o-acc">Klant (CRM-account) <span class="req">*</span></label><select class="txt" id="o-acc"><option value="">— kies een account —</option>${accounts.map(a=>`<option value="${a.id}">${esc(a.naam)} · ${esc(a.plaats)}</option>`).join('')}<option value="__new">+ Nieuw account aanmaken</option></select></div>
   <div class="full box" id="o-new" hidden><div class="fg">
    <div class="fld"><label for="n-naam">Naam <span class="req">*</span></label><input class="txt" id="n-naam"></div>
@@ -1040,10 +976,8 @@ function offerteModal(opts={}){
    <div class="fld"><label for="a-pc">Postcode <span class="req">*</span></label><input class="txt" id="a-pc" placeholder="1234 AB"></div>
    <div class="fld"><label for="a-plaats">Plaats <span class="req">*</span></label><input class="txt" id="a-plaats"></div></div></div>
   <div class="fld full"><label for="o-opm">Opmerking voor Nordhaven</label><textarea class="txt" id="o-opm" rows="2" maxlength="300"></textarea></div>
- </div>${line?`<p class="hint" style="margin:10px 0 0">Regel 1: ${esc(cfgName(PRODUCTS.find(p=>p.id===line.productId),line.values))} · ${line.aantal}× · ${eur(line.unit*line.aantal)}${PRODUCTS.find(p=>p.id===line.productId)?.incl?' incl. btw':' excl. btw'}</p>`:''}</div><div id="o-confirm" hidden></div>`,
- `<button class="btn" data-close>Annuleren</button><button class="btn" id="o-back" hidden>Terug</button><button class="btn pri" id="o-ok">Verder naar bevestigen</button>`);
- let stage=1;
- $('#o-back').onclick=()=>{stage=1;$('#o-form').hidden=false;$('#o-confirm').hidden=true;$('#o-back').hidden=true;$('#o-ok').textContent='Verder naar bevestigen'};
+ </div>${line?`<p class="hint" style="margin:10px 0 0">Regel 1: ${esc(cfgName(PRODUCTS.find(p=>p.id===line.productId),line.values))} · ${line.aantal}× · ${eur(line.unit*line.aantal)} excl. btw (bruto)</p>`:''}`,
+ `<button class="btn" data-close>Annuleren</button><button class="btn pri" id="o-ok">Offerte aanmaken</button>`);
  const fillAdr=()=>{const lev=($('[name="o-lev"]:checked')||{}).value;$('#o-adr').hidden=!(lev==='dealer'||lev==='klant');
   let a=null;if(lev==='dealer')a=s;else if(lev==='klant'){const id=$('#o-acc').value;a=id==='__new'?{straat:$('#n-straat').value,nr:$('#n-nr').value,pc:$('#n-pc').value,plaats:$('#n-plaats').value}:acc(id)}
   if(a){['straat','nr','pc','plaats'].forEach(k=>$('#a-'+k).value=a[k]||'')}};
@@ -1059,14 +993,8 @@ function offerteModal(opts={}){
   const lev=($('[name="o-lev"]:checked')||{}).value;if(!lev){ok=false;toast('Kies een leveringswijze.',1)}
   let adres=null;if(lev==='dealer'||lev==='klant'){adres={straat:req('a-straat'),nr:req('a-nr'),pc:req('a-pc'),plaats:req('a-plaats')};if(adres.pc&&!PC.test(adres.pc)){fieldErr('a-pc','Ongeldige postcode (1234 AB).');ok=false}}
   if(!ok)return;
-  if(adres)adres.pc=adres.pc.toUpperCase().replace(/^(\d{4})\s?/,'$1 ');
-  const draft={id:'(nieuw)',ref,accountId:accId,created:today(),leverweek:wk,levering:lev,adres,opm:$('#o-opm').value.trim(),status:'Concept',lines:line?[line]:[]};
-  const ws=offerteWarnings(draft),accName=nacc?nacc.naam:acc(accId)?.naam;
-  if(stage===1){stage=2;$('#o-form').hidden=true;$('#o-back').hidden=false;$('#o-ok').textContent='Bevestigen en offerte aanmaken';
-   $('#o-confirm').innerHTML=`<p style="margin:0 0 8px"><b>Bevestig de offerte.</b> Controleer de gegevens en de levertijd; pas daarna wordt de offerte aangemaakt.</p>${summaryHTML(draft,accName)}${ws.length?`<div style="margin-top:10px">${warnHTML(ws)}<label class="ack"><input type="checkbox" id="o-ack"> Ik heb de waarschuwingen gecontroleerd en wil toch doorgaan</label><div class="em" id="o-ackerr"></div></div>`:''}`;
-   $('#o-confirm').hidden=false;return}
-  if(ws.length&&!$('#o-ack').checked){$('#o-ackerr').textContent='Vink eerst aan dat je de waarschuwingen hebt gecontroleerd.';return}
   let aid=accId;if(nacc){aid='A'+(1000+accounts.length+1+Math.floor(Math.random()*90));nacc.id=aid;nacc.pc=nacc.pc.toUpperCase().replace(/^(\d{4})\s?/,'$1 ');nacc.contact='';accounts.push(nacc)}
+  if(adres)adres.pc=adres.pc.toUpperCase().replace(/^(\d{4})\s?/,'$1 ');
   const o={id:nextOff(),ref,accountId:aid,created:today(),leverweek:wk,levering:lev,adres,opm:$('#o-opm').value.trim(),status:'Concept',lines:line?[line]:[]};
   offertes.push(o);save();closeModal();
   if(opts.thenAdd){S.ctx={offerteId:o.id};toast(`Offerte ${o.id} aangemaakt. Kies het volgende product.`);location.hash='#/order-entry'}
@@ -1078,14 +1006,10 @@ function chooseOfferte(){const open=offertes.filter(o=>o.status==='Concept');
  `<button class="btn" data-close>Annuleren</button><button class="btn pri" id="c-ok">Toevoegen</button>`);
  $('#c-ok').onclick=()=>{const id=$('#c-off').value;if(id==='__new'){closeModal();offerteModal({thenAdd:true})}else{S.ctx={offerteId:id};closeModal();addToCtx(true)}}}
 function addToCtx(stay){const o=offertes.find(x=>x.id===S.ctx.offerteId);if(!o||o.status!=='Concept'){toast('Deze offerte kan niet meer worden aangepast.',1);S.ctx=null;return}
- const line=currentLine(),draft={...o,lines:[...o.lines,line]};
- confirmStep({title:'Regel toevoegen aan '+o.id,intro:`<b>Bevestig regel ${draft.lines.length}.</b> Controleer de offerte en de levertijd; pas daarna wordt de regel toegevoegd.`,o:draft,accName:acc(o.accountId)?.naam,warnings:offerteWarnings(draft),okLabel:'Bevestigen en toevoegen',onOk:()=>{
-  o.lines.push(line);save();
-  if(stay){toast(`Regel ${o.lines.length} toegevoegd aan ${o.id}. Kies het volgende product.`);location.hash='#/order-entry'}
-  else{const id=o.id;S.ctx=null;toast(`Regel ${o.lines.length} toegevoegd aan ${id}.`);location.hash='#/offertes/'+id}}})}
-function saveLine(){if(!check())return;const o=offertes.find(x=>x.id===S.ctx.offerteId),idx=S.ctx.lineIdx,line=currentLine();const draft={...o,lines:o.lines.map((l,i)=>i===idx?line:l)};
- confirmStep({title:'Wijziging opslaan',intro:`<b>Bevestig de wijziging van regel ${idx+1}.</b>`,o:draft,accName:acc(o.accountId)?.naam,warnings:offerteWarnings(draft),okLabel:'Bevestigen en opslaan',onOk:()=>{
-  o.lines[idx]=line;save();S.ctx=null;toast(`Regel ${idx+1} van ${o.id} bijgewerkt.`);location.hash='#/offertes/'+o.id}})}
+ o.lines.push(currentLine());save();
+ if(stay){toast(`Regel ${o.lines.length} toegevoegd aan ${o.id}. Kies het volgende product.`);location.hash='#/order-entry'}
+ else{const id=o.id;S.ctx=null;toast(`Regel ${o.lines.length} toegevoegd aan ${id}.`);location.hash='#/offertes/'+id}}
+function saveLine(){if(!check())return;const o=offertes.find(x=>x.id===S.ctx.offerteId);o.lines[S.ctx.lineIdx]=currentLine();save();const id=o.id,n=S.ctx.lineIdx+1;S.ctx=null;toast(`Regel ${n} van ${id} bijgewerkt.`);location.hash='#/offertes/'+id}
 function saveTemplate(){const v=getVals();openModal('Opslaan als sjabloon',`<div class="fld"><label for="t-naam">Naam sjabloon <span class="req">*</span></label><input class="txt" id="t-naam" value="${esc(cfgName(C.P,v))}" maxlength="60"></div><p class="hint">Een sjabloon bewaart alle gekozen eigenschappen, ook als de configuratie nog niet compleet is.</p>`,`<button class="btn" data-close>Annuleren</button><button class="btn pri" id="t-ok">Opslaan</button>`);
  $('#t-ok').onclick=()=>{const n=$('#t-naam').value.trim();if(!n){fieldErr('t-naam','Verplicht veld.');return}templates.push({id:'T'+Date.now(),naam:n,productId:C.P.id,values:v,extras:C.extras,aantal:v.aantal,created:today()});save();closeModal();toast('Sjabloon opgeslagen.')}}
 
@@ -1104,12 +1028,11 @@ function vOfferte(id){
  <div class="tools"><h1 style="margin:0">Offerte ${o.id}</h1><span class="tag ${ro?'besteld':'concept'}">${o.status}</span><span class="sp"></span>
  <button class="btn sm noprint" id="b-print">Afdrukken</button><button class="btn sm noprint" id="b-dup">Dupliceren</button>${ro?'':'<button class="btn sm noprint" id="b-edit">Gegevens wijzigen</button><button class="btn sm danger noprint" id="b-del">Verwijderen</button>'}</div>
  <div class="split"><div>
- ${ro?'':(()=>{const ws=offerteWarnings(o);return ws.length?`<div style="margin-bottom:14px">${warnHTML(ws)}</div>`:''})()}
  <div class="card"><h2>Regels</h2><table class="grid"><thead><tr><th>#</th><th>Omschrijving</th><th class="num">Aantal</th><th class="num">Prijs p/st</th><th class="num">Totaal</th><th class="noprint"></th></tr></thead><tbody>
  ${o.lines.map((l,i)=>{const P=PRODUCTS.find(p=>p.id===l.productId);if(!P)return `<tr><td>${i+1}</td><td colspan="5">Product ${esc(l.productId)} bestaat niet meer.</td></tr>`;const sum=summaryOf(P,l.values,l.extras);return `<tr><td>${i+1}</td><td><b>${esc(cfgName(P,l.values))}</b>${l.values.ref?` · <i>${esc(l.values.ref)}</i>`:''}<div class="cfgsum">${sum.map(([k,v])=>`${esc(k)}: ${esc(v)}`).join(' · ')}</div></td><td class="num">${l.aantal}</td><td class="num">${eur(l.unit)}${P.incl?'<div class="hint">incl. btw</div>':''}</td><td class="num">${eur(l.unit*l.aantal)}</td><td class="noprint" style="white-space:nowrap">${ro?'':`<button class="btn sm" data-ledit="${i}">Wijzigen</button> <button class="btn sm danger" data-ldel="${i}" aria-label="Regel ${i+1} verwijderen">✕</button>`}</td></tr>`}).join('')||'<tr><td colspan="6" style="color:var(--mute)">Nog geen regels.</td></tr>'}
  </tbody></table>${ro?'':'<div style="margin-top:10px" class="noprint"><button class="btn" id="b-addline">+ Configuratie toevoegen</button></div>'}
  ${o.lines.some(isIncl)?'<p class="hint" style="margin:10px 0 0">Regels uit het Ambiance prijsboek staan als adviesprijs incl. btw en standaardmontage; in de totalen zijn ze omgerekend naar excl. btw.</p>':''}<div class="totals" style="margin-top:12px">${t.toeslag?`<div><span>Verwerkingstoeslag kokers/hoeklijnen (${eur(t.toeslag)} incl. btw)</span><span>${eur(t.toeslag/(1+VAT))}</span></div>`:''}<div><span>Subtotaal excl. btw</span><span>${eur(t.bruto)}</span></div><div><span>Dealerkorting ${DEALER_DISCOUNT*100}%</span><span>− ${eur(t.korting)}</span></div><div><span>Netto excl. btw</span><span>${eur(t.netto)}</span></div><div><span>Btw 21%</span><span>${eur(t.btw)}</span></div><div class="big"><span>Totaal incl. btw</span><span>${eur(t.incl)}</span></div></div></div></div>
- <div><div class="card"><h2>Gegevens</h2><dl class="kv"><dt>Referentie</dt><dd>${esc(o.ref)}</dd><dt>Klant</dt><dd>${esc(a?.naam||'—')}${a?`<br><span class="hint">${esc(a.straat)} ${esc(a.nr)}, ${esc(a.pc)} ${esc(a.plaats)}${a.tel?' · '+esc(a.tel):''}</span>`:''}</dd><dt>Aangemaakt</dt><dd>${o.created}</dd><dt>Levertijd</dt><dd>${o.leverweek?esc(levertijdTxt(o.leverweek)):'<span style="color:var(--err)">Nog geen leverweek ingevuld</span>'}</dd><dt>Levering</dt><dd>${lev}${o.adres?`<br><span class="hint">${esc(o.adres.straat)} ${esc(o.adres.nr)}, ${esc(o.adres.pc)} ${esc(o.adres.plaats)}</span>`:''}</dd><dt>Opmerking</dt><dd>${esc(o.opm)||'—'}</dd></dl></div>
+ <div><div class="card"><h2>Gegevens</h2><dl class="kv"><dt>Referentie</dt><dd>${esc(o.ref)}</dd><dt>Klant</dt><dd>${esc(a?.naam||'—')}${a?`<br><span class="hint">${esc(a.straat)} ${esc(a.nr)}, ${esc(a.pc)} ${esc(a.plaats)}${a.tel?' · '+esc(a.tel):''}</span>`:''}</dd><dt>Aangemaakt</dt><dd>${o.created}</dd><dt>Leverweek</dt><dd>${o.leverweek?fmtWeek(o.leverweek):'<span style="color:var(--err)">Nog niet ingevuld</span>'}</dd><dt>Levering</dt><dd>${lev}${o.adres?`<br><span class="hint">${esc(o.adres.straat)} ${esc(o.adres.nr)}, ${esc(o.adres.pc)} ${esc(o.adres.plaats)}</span>`:''}</dd><dt>Opmerking</dt><dd>${esc(o.opm)||'—'}</dd></dl></div>
  ${ro?'':`<div class="card noprint"><h2>Bestellen</h2><label class="chk" style="display:flex;gap:6px;margin-bottom:6px"><input type="checkbox" id="b-maten"> Maten zijn ingemeten en gecontroleerd</label><label class="chk" style="display:flex;gap:6px;margin-bottom:10px"><input type="checkbox" id="b-akk"> Ik ga akkoord met de leveringsvoorwaarden</label><div class="em" id="b-err"></div><button class="btn pri" id="b-order" style="width:100%">Offerte bestellen</button></div>`}</div></div></div>`;
  $('#b-print').onclick=()=>window.print();
  $('#b-dup').onclick=()=>{const c=JSON.parse(JSON.stringify(o));c.id=nextOff();c.status='Concept';c.created=today();delete c.orderNr;delete c.orderedAt;c.ref=o.ref+' (kopie)';offertes.push(c);save();toast(`Gedupliceerd als ${c.id}.`);location.hash='#/offertes/'+c.id};
@@ -1122,8 +1045,8 @@ function vOfferte(id){
  $('#b-order').onclick=()=>{const errs=[];if(!o.lines.length)errs.push('De offerte heeft geen regels.');if(!o.leverweek)errs.push('Vul eerst een leverweek in via "Gegevens wijzigen".');else if(o.leverweek<minWeek())errs.push(`Leverweek ${fmtWeek(o.leverweek)} is niet meer haalbaar; kies ${fmtWeek(minWeek())} of later.`);
   if(!$('#b-maten').checked)errs.push('Bevestig dat de maten zijn gecontroleerd.');if(!$('#b-akk').checked)errs.push('Ga akkoord met de leveringsvoorwaarden.');
   if(errs.length){$('#b-err').innerHTML=errs.map(esc).join('<br>');return}
-  confirmStep({title:'Offerte bestellen',intro:`<b>Bevestig de bestelling.</b> Offerte ${o.id} wordt als order naar Nordhaven Zonwering verstuurd. Dit kan niet ongedaan worden gemaakt.`,o,accName:a?.naam,warnings:offerteWarnings(o),okLabel:'Definitief bestellen',onOk:()=>{
-   o.status='Besteld';o.orderNr='ORD-2026-'+(48210+offertes.filter(x=>x.orderNr).length);o.orderedAt=today();save();toast(`Order ${o.orderNr} geplaatst.`);vOfferte(o.id)}})};
+  confirmBox('Offerte bestellen',`Offerte ${o.id} (${o.lines.length} ${o.lines.length===1?'regel':'regels'}, ${eur(t.netto)} netto excl. btw) wordt als order naar Nordhaven Zonwering verstuurd. Dit kan niet ongedaan worden gemaakt.`,'Definitief bestellen',()=>{
+   o.status='Besteld';o.orderNr='ORD-2026-'+(48210+offertes.filter(x=>x.orderNr).length);o.orderedAt=today();save();toast(`Order ${o.orderNr} geplaatst.`);vOfferte(o.id)})};
 }
 function editOfferte(o){
  openModal('Offertegegevens wijzigen',`<div class="fg">

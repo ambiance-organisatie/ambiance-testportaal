@@ -22,7 +22,6 @@ Een tweede, los testportaal met de opbouw van een SaaS order-entry configurator 
 - Zoekvelden voor kleur en doeknummer, afhankelijke velden (snoer/handzender/schakelaar per motortype) en realistische validatie
 - Offertes (aanmaken, regels toevoegen/wijzigen, gegevens wijzigen, dupliceren, bestellen), CRM-accounts, sjablonen, eigenschappen, master data en instellingen
 - Negen testscenario's op de homepagina, waarvan vier bewust moeten falen of een vraag moeten opleveren
-- Controles voor wie de order invult: een waarschuwingsblok bij onwaarschijnlijke invoer (maten in cm, veel stuks, hoge bedragen, dubbele regels of orders, leverweek ver vooruit, geen zender), een live lijst "Nog in te vullen" / "Klopt niet" en een bevestigingsstap met levertijd vóór het aanmaken, toevoegen, wijzigen en bestellen. Bij waarschuwingen moet je expliciet bevestigen dat je ze hebt gecontroleerd
 - Gegevens blijven in de eigen browser (localStorage); via het gebruikersmenu zet je de testdata terug
 
 Live: https://ambiance-organisatie.github.io/ambiance-testportaal/configurator/
