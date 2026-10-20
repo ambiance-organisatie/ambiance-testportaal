@@ -197,6 +197,18 @@ footer.foot .flogo{width:40px;height:40px}
 .cw-mic.on{background:var(--orange);border-color:var(--orange);color:#fff;animation:cwpulse 1.2s infinite}
 @keyframes cwpulse{0%,100%{box-shadow:0 0 0 0 rgba(246,139,47,.5)}50%{box-shadow:0 0 0 6px rgba(246,139,47,0)}}
 @media (prefers-reduced-motion:reduce){.cw-mic.on{animation:none}}
+.opd h4{margin:10px 0 4px;font-size:12.5px;color:var(--navy);font-weight:600}
+.opd ul{list-style:none;margin:0;padding:0}
+.opd li{display:grid;grid-template-columns:18px minmax(0,.9fr) minmax(0,1.1fr);gap:6px;padding:4px 0;border-top:1px solid var(--line);font-size:13px;align-items:baseline}
+.opd li .i{font-weight:700;text-align:center}.opd li .l{color:var(--mute)}.opd li .v{color:var(--ink);overflow-wrap:anywhere}
+.opd li .v em{display:block;font-style:normal;font-size:12px;color:var(--mute)}
+.opd-ok .i{color:var(--ok)}.opd-open .i{color:var(--mute)}.opd-fout .i{color:var(--err)}.opd-fout .v em{color:var(--err)}
+.opd-open .v{color:var(--mute)}
+.opd-bar{display:flex;height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin:2px 0 6px}
+.opd-bar span{background:var(--ok);transition:width .3s}.opd-bar span.f{background:var(--err)}
+.opd-sum{margin:0;font-size:13px;color:var(--navy)}.opd-sum .e{color:var(--err)}
+.opd-conf{margin:10px 0 4px;padding:10px;border-radius:6px;background:var(--ok-soft);font-size:13.5px}
+.opd-conf p{margin:4px 0 6px}
 </style>
 </head>
 <body>
@@ -210,7 +222,7 @@ footer.foot .flogo{width:40px;height:40px}
     <button class="btn pri" id="new-order" type="button">Nieuwe order</button>
   </div></div>
 </header>
-<p class="banner info" id="nodb" hidden>Nog niet gekoppeld aan GitHub. Je kunt orders invullen en controleren, maar ze worden niet bewaard en de robot kan niet starten. <button type="button" id="open-settings2" class="btn sm" style="margin-left:6px">Koppelen</button></p>
+<p class="banner info" id="nodb" hidden>Niet gekoppeld aan GitHub: orders worden alleen in deze browser bewaard. Claude vult ze via "Nieuwe opdracht leverancier" in het portaal in. <button type="button" id="open-settings2" class="btn sm" style="margin-left:6px">Koppelen</button></p>
 
 <div class="wrap app">
   <aside class="panel" aria-label="Orders">
@@ -644,6 +656,74 @@ function settingsModal(){
   try{localStorage.setItem(CFG_KEY,JSON.stringify(cfg))}catch(e){toast('De sleutel kan in deze browser niet worden bewaard; hij geldt alleen voor deze sessie.',1)}
   await loadAll();return true})}
 $('#open-settings').onclick=settingsModal;$('#open-settings2').onclick=settingsModal;
+/* ================= Opdracht leverancier: Claude in Chrome vult het portaal, de hub houdt bij wat open staat ================= */
+const LOCAL_KEY='bestelhub-lokaal';
+function bewaarLokaal(){if(online())return;try{localStorage.setItem(LOCAL_KEY,JSON.stringify(orders))}catch(e){}}
+function laadLokaal(){if(online())return;try{const l=JSON.parse(localStorage.getItem(LOCAL_KEY)||'[]');if(Array.isArray(l)&&l.length)orders=l}catch(e){}}
+// bewaar automatisch in deze browser zolang de hub niet aan GitHub hangt
+const _markDirty=markDirty;markDirty=function(o){_markDirty(o);bewaarLokaal()};
+const _saveOrder=saveOrder;saveOrder=async function(o,msg){const r=await _saveOrder(o,msg);bewaarLokaal();return r};
+
+function opdrachtItems(o){
+ const it=[{key:'ref',groep:'Order',label:'Referentie',waarde:o.ref||'—'}];
+ (o.lines||[]).forEach((l,i)=>{const P=PROD(l.productId);if(!P)return;const g=`Regel ${i+1}: ${cfgName(P,l.values||{})}${+l.aantal>1?` ×${l.aantal}`:''}`;
+  it.push({key:`l${i}-product`,groep:g,label:'Product en aantal',waarde:`${P.name}, ${l.aantal}×`});
+  summaryOf(P,l.values||{}).forEach(([k,v],j)=>it.push({key:`l${i}-${j}`,groep:g,label:k,waarde:v}))});
+ it.push({key:'levering',groep:'Order',label:'Levering',waarde:`${LEV[o.levering]||'—'}${o.adres&&o.levering!=='afhalen'?`, ${o.adres.straat} ${o.adres.nr}, ${o.adres.pc} ${o.adres.plaats}`:''}`});
+ it.push({key:'leverweek',groep:'Order',label:'Leverweek',waarde:o.leverweek?fmtWeek(o.leverweek):'—'});
+ if(o.opmerking)it.push({key:'opmerking',groep:'Order',label:'Opmerking voor de leverancier',waarde:o.opmerking});
+ const st=o.opdracht?.st||{};return it.map(x=>({...x,...(st[x.key]||{st:'open'})}))}
+function opdrachtTeller(o){const it=opdrachtItems(o);return {tot:it.length,ok:it.filter(x=>x.st==='ok').length,fout:it.filter(x=>x.st==='fout').length,open:it.filter(x=>x.st==='open').length}}
+
+function opdrachtHTML(o){
+ if(!o.opdracht)return '';const it=opdrachtItems(o),t=opdrachtTeller(o);const b=o.opdracht.bevestiging;
+ const groepen=[...new Set(it.map(x=>x.groep))];
+ const ico={ok:'✓',fout:'!',open:'○'};const lab={ok:'Bevestigd',fout:'Probleem',open:'Open'};
+ return `<div class="box opd" id="opdracht"><h3>Opdracht leverancier</h3>
+ <div class="opd-bar" aria-hidden="true"><span style="width:${Math.round(t.ok/t.tot*100)}%"></span><span class="f" style="width:${Math.round(t.fout/t.tot*100)}%"></span></div>
+ <p class="opd-sum"><b>${t.ok}</b> bevestigd · <b>${t.open}</b> open${t.fout?` · <b class="e">${t.fout}</b> probleem`:''}</p>
+ ${b?`<div class="opd-conf"><b>Bevestiging van ${esc((SUPPLIERS.find(s=>s[0]===o.leverancier)||SUPPLIERS[0])[1].split(' (')[0])}</b><p>${esc(b.tekst)}</p><dl class="kv">${b.offerte?`<dt>Offerte</dt><dd class="mono">${esc(b.offerte)}</dd>`:''}${b.prijs?`<dt>Prijs portaal</dt><dd>${esc(b.prijs)}</dd>`:''}<dt>Levertijd</dt><dd>${esc(b.levertijd||levertijdTxt(o.leverweek))}</dd></dl></div>`:''}
+ ${groepen.map(g=>`<div class="opd-g"><h4>${esc(g)}</h4><ul>${it.filter(x=>x.groep===g).map(x=>`<li class="opd-${x.st}" title="${lab[x.st]}"><span class="i" aria-label="${lab[x.st]}">${ico[x.st]}</span><span class="l">${esc(x.label)}</span><span class="v">${esc(x.waarde)}${x.info?`<em>${esc(x.info)}</em>`:''}</span></li>`).join('')}</ul></div>`).join('')}
+ </div>`}
+
+function opdrachtOpenen(o){
+ const sup=SUPPLIERS.find(s=>s[0]===o.leverancier)||SUPPLIERS[0];
+ o.opdracht={start:Date.now(),st:{},bevestiging:null};o.status='verwerking';
+ addNote(o,'info',`Nieuwe opdracht voor ${sup[1].split(' (')[0]}: het leveranciersportaal is in een nieuw Chrome-tabblad geopend. Claude vult de order daar in en vinkt hieronder af wat bevestigd is.`);
+ saveOrder(o,`Hub: opdracht ${o.nr} naar leverancier`);renderList();renderOrder();
+ return sup[2]+'#/order-entry'}
+
+/* knop in het zijpaneel */
+const _renderSide=renderSide;renderSide=function(){
+ _renderSide();const o=cur();if(!o)return;const side=$('#side');
+ side.querySelector('#opdracht')?.remove();side.querySelector('#opd-act')?.remove();
+ if(o.status==='klaar'||o.status==='probleem'){
+  side.querySelector('.box.act')?.insertAdjacentHTML('beforebegin',`<div class="box act" id="opd-act"><h3>${o.status==='probleem'?'Opnieuw naar de leverancier':'Klaar voor de leverancier'}</h3><p style="margin:0 0 10px;font-size:14px">Opent het leveranciersportaal in een nieuw Chrome-tabblad. Claude vult de order daar in. Hier zie je wat nog open staat, wat bevestigd is en de bevestiging van de leverancier. Er wordt nog niet besteld.</p><button class="btn pri" type="button" id="opd-go" style="width:100%">Nieuwe opdracht leverancier</button></div>`);
+  $('#opd-go').onclick=()=>{const url=opdrachtOpenen(cur());window.open(url,'_blank','noopener')};
+ }
+ if(o.opdracht)side.insertAdjacentHTML('afterbegin',opdrachtHTML(o));
+ if(!online())[...side.querySelectorAll('.box.act')].filter(x=>x.id!=='opd-act'&&/robot/i.test(x.textContent)).forEach(a=>a.remove());
+ renderSide.last=null};
+
+/* koppelpunt voor Claude (via Claude in Chrome of de widget) */
+window.hub={
+ versie:1,
+ vind(nr){const o=nr?orders.find(x=>x.nr===String(nr).toUpperCase()):cur();if(!o)throw new Error('Order niet gevonden.');return o},
+ async doe(tool,inp){lastUser=String(inp?.__zegt||lastUser||'');const r=await aiExec(tool,inp||{});return JSON.parse(r)},
+ controle(nr){const o=this.vind(nr);sel=o.id;renderList();renderOrder();return JSON.parse(orderVoorAI(o))},
+ async klaarzetten(nr){const o=this.vind(nr);if(o.status!=='concept')return o.status;const {miss,bad,warn}=orderCheck(o);if(miss.length||bad.length)throw new Error('Nog niet compleet: '+[...miss,...bad].map(x=>x.label).join('; '));o.confirmedAt=Date.now();await setStatus(o,'klaar','Order bevestigd in het gesprek met Claude.'+(warn.length?' Waarschuwingen gecontroleerd: '+warn.join(' | '):''));return o.status},
+ opdracht(nr){const o=this.vind(nr);sel=o.id;if(!o.opdracht||!['verwerking'].includes(o.status))return opdrachtOpenen(o);return (SUPPLIERS.find(s=>s[0]===o.leverancier)||SUPPLIERS[0])[2]+'#/order-entry'},
+ items(nr){return opdrachtItems(this.vind(nr)).map(x=>({key:x.key,groep:x.groep,label:x.label,waarde:x.waarde,st:x.st}))},
+ _zet(nr,keys,st,info){const o=this.vind(nr);o.opdracht=o.opdracht||{start:Date.now(),st:{}};(Array.isArray(keys)?keys:[keys]).forEach(k=>o.opdracht.st[k]={st,info:info||'',at:Date.now()});markDirty(o);renderOrder();return opdrachtTeller(o)},
+ ok(nr,keys,info){return this._zet(nr,keys,'ok',info)},
+ fout(nr,key,tekst){const o=this.vind(nr);const it=opdrachtItems(o).find(x=>x.key===key);addNote(o,'warning',`${it?it.groep+' · '+it.label+': ':''}${tekst}`,'Leverancier');return this._zet(nr,key,'fout',tekst)},
+ notitie(nr,kind,tekst){const o=this.vind(nr);addNote(o,kind||'info',tekst,'Leverancier');markDirty(o);renderOrder();return true},
+ async klaar(nr,{offerte='',prijs='',tekst='',levertijd=''}={}){const o=this.vind(nr);o.supplier={...(o.supplier||{}),offerte};o.opdracht=o.opdracht||{start:Date.now(),st:{}};
+  const t=opdrachtTeller(o);o.opdracht.bevestiging={at:Date.now(),offerte,prijs,levertijd:levertijd||levertijdTxt(o.leverweek),tekst:tekst||`De order staat als offerte ${offerte} in het portaal. ${t.ok} van ${t.tot} punten bevestigd${t.fout?`, ${t.fout} met een probleem`:''}. Nog niet besteld.`};
+  await setStatus(o,t.fout?'probleem':'ingevuld',`Ingevuld bij de leverancier als offerte ${offerte||'—'}${prijs?` (${prijs})`:''}. Nog niet besteld.`);addNote(o,t.fout?'warning':'ok',o.opdracht.bevestiging.tekst,'Leverancier');await saveOrder(o);renderOrder();return o.status},
+};
+laadLokaal();
+
 renderList();renderOrder();
 if(online()){loadAll()}else{setConn('off')}
 /* ================= Claude-widget: orders inspreken, laten controleren en doorzetten ================= */
