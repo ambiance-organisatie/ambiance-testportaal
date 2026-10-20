@@ -169,6 +169,34 @@ footer.foot .in2{border-top:1px solid var(--orange);padding-top:14px;display:fle
 footer.foot .pay{height:20px;width:auto;max-width:70%}
 footer.foot .flogo{width:40px;height:40px}
 @media (prefers-reduced-motion:no-preference){.olist li button,.btn{transition:background .12s,border-color .12s}}
+/* Claude-widget */
+.cw-fab{position:fixed;right:20px;bottom:20px;z-index:60;display:flex;align-items:center;gap:8px;background:var(--orange);color:#fff;border:0;border-radius:24px;padding:12px 18px;font:700 14px Roboto,sans-serif;text-transform:uppercase;letter-spacing:.03em;box-shadow:0 6px 20px rgba(37,51,60,.25);cursor:pointer}
+.cw-fab:hover{background:var(--navy)}
+.cw-dot{width:10px;height:10px;border-radius:50%;background:#fff;box-shadow:0 0 0 3px rgba(255,255,255,.35)}
+.cw{position:fixed;right:20px;bottom:76px;z-index:61;width:min(390px,calc(100vw - 32px));height:min(560px,calc(100vh - 110px));display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--orange);border-radius:8px;box-shadow:0 14px 40px rgba(37,51,60,.28);overflow:hidden}
+.cw[hidden]{display:none}
+.cw header{display:flex;align-items:baseline;gap:8px;padding:10px 12px;background:var(--navy);color:#fff}
+.cw header b{font-size:16px}.cw header span{font-size:12px;opacity:.8;flex:1}
+.cw header button{background:none;border:0;color:#fff;font-size:22px;line-height:1;cursor:pointer;padding:0 4px}
+.cw-opts{display:flex;align-items:center;gap:12px;padding:7px 12px;border-bottom:1px solid var(--line);font-size:13px;color:var(--navy)}
+.cw-opts label{display:flex;align-items:center;gap:5px;cursor:pointer}
+.cw-link{white-space:nowrap;margin-left:auto;background:none;border:0;color:var(--lightblue);font-size:12px;text-decoration:underline;cursor:pointer;padding:0}
+.cw-link+.cw-link{margin-left:0}
+.cw-log{flex:1;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:8px;background:var(--bg)}
+.cw-msg p{margin:0;white-space:pre-wrap;font-size:14px;line-height:1.45}
+.cw-msg{max-width:88%;padding:8px 11px;border-radius:10px}
+.cw-ai{align-self:flex-start;background:var(--surface);border:1px solid var(--line);color:var(--ink)}
+.cw-user{align-self:flex-end;background:var(--navy);color:#fff}
+.cw-err{align-self:stretch;max-width:none;background:#FDECEA;color:var(--err);border:1px solid #F5C6C2}
+.cw-msg.thinking p{color:var(--mute);font-style:italic}
+.cw-tick{align-self:flex-start;font-size:12px;color:var(--ok);padding-left:4px}
+.cw-tick::before{content:"✓ "}.cw-tick.bad{color:var(--warn)}.cw-tick.bad::before{content:"! "}
+.cw-bar{display:flex;gap:6px;align-items:flex-end;padding:8px;border-top:1px solid var(--line)}
+.cw-bar textarea{flex:1;resize:none;border:1px solid var(--line);border-radius:6px;padding:8px;font:14px Roboto,sans-serif;max-height:110px;min-height:38px}
+.cw-mic{width:40px;height:38px;flex:none;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--navy);display:grid;place-items:center;cursor:pointer}
+.cw-mic.on{background:var(--orange);border-color:var(--orange);color:#fff;animation:cwpulse 1.2s infinite}
+@keyframes cwpulse{0%,100%{box-shadow:0 0 0 0 rgba(246,139,47,.5)}50%{box-shadow:0 0 0 6px rgba(246,139,47,0)}}
+@media (prefers-reduced-motion:reduce){.cw-mic.on{animation:none}}
 </style>
 </head>
 <body>
@@ -618,6 +646,171 @@ function settingsModal(){
 $('#open-settings').onclick=settingsModal;$('#open-settings2').onclick=settingsModal;
 renderList();renderOrder();
 if(online()){loadAll()}else{setConn('off')}
+/* ================= Claude-widget: orders inspreken, laten controleren en doorzetten ================= */
+const AI_KEY='bestelhub-claude';
+let ai={key:'',model:'claude-sonnet-5-5',voorlezen:true,gesprek:false};
+try{const c=JSON.parse(localStorage.getItem(AI_KEY)||'null');if(c)ai={...ai,...c}}catch(e){}
+const aiSave=()=>{try{localStorage.setItem(AI_KEY,JSON.stringify(ai))}catch(e){}};
+let chat=[];let lastUser='';let aiBusy=false;let aiCtl=null;
+const JA=/\b(ja|jawel|akkoord|bevestig\w*|klopt|prima|doe maar|ga je gang|is goed|zet (hem|maar) klaar|start)\b/i;
+const BESTEL=/\bbestel\w*\b/i;
+
+function schemaTekst(){
+ return PRODUCTS.map(P=>{const f=sectionsFor(P).flat.filter(f=>!['tabel','calc'].includes(f.type));
+  return `${P.id} (${P.name})${P.w?`: breedte ${P.w[0]}-${P.w[1]} mm, gekoppeld max 7000; uitval ${P.u.join('/')}`:''}\n`+f.map(f=>`  - ${f.id}: ${f.l}${f.req?' (verplicht)':''} [${f.type==='sel'||f.type==='radio'?'keuze: '+f.o.map(o=>o[0]+'='+o[1]).join('; '):f.type==='color'?'kleur: RAL xxxx of structuurlak zoals 7016-SL / 9006-SM':f.type==='check'?'ja/nee':f.type==='mm'?'getal in mm':f.type==='num'?'getal':'tekst'}]${f.def!==undefined?' standaard='+f.def:''}`).join('\n')}).join('\n');
+}
+function orderVoorAI(o){if(!o)return 'Er is geen order geopend.';const {miss,bad,warn}=orderCheck(o);
+ return JSON.stringify({nr:o.nr,status:o.status,klant:o.klant,ref:o.ref,levering:o.levering,adres:o.adres,leverweek:o.leverweek,opmerking:o.opmerking,
+  regels:(o.lines||[]).map((l,i)=>({regel:i+1,productId:l.productId,aantal:l.aantal,waarden:l.values,omschrijving:cfgName(PROD(l.productId),l.values||{}),prijs:PROD(l.productId)?unitPrice(PROD(l.productId),l.values||{})*(+l.aantal||1):0})),
+  totaal_incl_btw:orderTotal(o),levertijd:levertijdTxt(o.leverweek),nog_in_te_vullen:miss.map(x=>x.label),klopt_niet:bad.map(x=>x.label),waarschuwingen:warn,leveranciersportaal:o.supplier,laatste_notities:(o.notes||[]).slice(-5).map(n=>`${n.from} (${n.kind}): ${n.text}`)})}
+
+const AI_TOOLS=[
+ {name:'nieuwe_order',description:'Maakt een nieuwe lege order aan en opent die. Gebruik dit als de gebruiker een nieuwe order inspreekt en de geopende order niet leeg is of al verder is dan concept.',input_schema:{type:'object',properties:{}}},
+ {name:'open_order',description:'Opent een bestaande order op nummer (bijv. HUB-0003).',input_schema:{type:'object',properties:{nr:{type:'string'}},required:['nr']}},
+ {name:'zet_klant',description:'Vult klantgegevens in (alleen de velden die je meegeeft). Postcode als 1234 AB.',input_schema:{type:'object',properties:{naam:{type:'string'},straat:{type:'string'},nr:{type:'string'},pc:{type:'string'},plaats:{type:'string'},tel:{type:'string'},mail:{type:'string'}}}},
+ {name:'zet_order',description:'Vult ordergegevens in. levering: dealer (winkel), klant of afhalen. leverweek: ISO-week zoals 2026-W46, of "vroegst" voor de vroegst mogelijke week. adres alleen als het afwijkt van winkel/klantadres.',input_schema:{type:'object',properties:{ref:{type:'string'},levering:{type:'string',enum:['dealer','klant','afhalen']},leverweek:{type:'string'},opmerking:{type:'string'},adres:{type:'object',properties:{straat:{type:'string'},nr:{type:'string'},pc:{type:'string'},plaats:{type:'string'}}}}}},
+ {name:'zet_regel',description:'Maakt of wijzigt een orderregel. regel = nummer (1 = eerste); laat weg of geef een nieuw nummer voor een nieuwe regel. waarden gebruikt de veld-id\'s en keuzecodes uit het schema; alleen meegegeven velden worden aangepast.',input_schema:{type:'object',properties:{regel:{type:'integer'},productId:{type:'string',enum:PRODUCTS.map(p=>p.id)},aantal:{type:'integer'},waarden:{type:'object'}}}},
+ {name:'verwijder_regel',description:'Verwijdert een orderregel.',input_schema:{type:'object',properties:{regel:{type:'integer'}},required:['regel']}},
+ {name:'controleer',description:'Geeft de actuele order terug met wat nog ontbreekt, wat niet klopt, waarschuwingen, prijs en levertijd.',input_schema:{type:'object',properties:{}}},
+ {name:'klaarzetten',description:'Bevestigt de order en zet hem klaar voor de leverancier. Alleen aanroepen nadat je de samenvatting met prijs en levertijd hebt voorgelezen en de gebruiker daarna expliciet ja heeft gezegd. Bij waarschuwingen: ook bevestigd_waarschuwingen=true, alleen als de gebruiker ze heeft gehoord en akkoord is.',input_schema:{type:'object',properties:{bevestigd_waarschuwingen:{type:'boolean'}}}},
+ {name:'robot_starten',description:'Start de robot op GitHub die de order in het leveranciersportaal invult (actie invullen, status moet klaar of probleem zijn) of definitief bestelt (actie bestellen, status moet ingevuld zijn). Alleen na expliciete toestemming van de gebruiker; bestellen alleen als de gebruiker letterlijk om bestellen vraagt.',input_schema:{type:'object',properties:{actie:{type:'string',enum:['invullen','bestellen']}},required:['actie']}},
+ {name:'vernieuw',description:'Haalt de nieuwste stand van de order op uit GitHub (bijvoorbeeld om te zien of de robot klaar is).',input_schema:{type:'object',properties:{}}},
+];
+function aiSystem(){return `Je bent Claude, de assistent in de Bestelhub van Ambiance Zonwering. De gebruiker (een medewerker van Ambiance) spreekt orders in, vaak met spraak. Jij vult de order in de hub in met je gereedschap, laat de controles zien en zet hem na bevestiging klaar. Daarna kan de robot hem in het leveranciersportaal (het testportaal van Allround) invullen.
+
+Vandaag is het ${new Date().toLocaleDateString('nl-NL',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}. Vroegst mogelijke leverweek: ${minWeek()}. Winkeladres (levering "dealer"): ${settings.winkel.straat} ${settings.winkel.nr}, ${settings.winkel.pc} ${settings.winkel.plaats}.
+
+PRODUCTEN EN VELDEN (Allround, Ambiance prijsboek 2026):
+${schemaTekst()}
+
+WERKWIJZE
+- Zet alles wat de gebruiker noemt meteen in de order (zet_klant, zet_order, zet_regel). Vertaal gewone taal naar de codes: "1 meter 80" = 1800, "motor met afstandsbediening" = bed io met zender situo, "motor op een schakelaar" = bed wt, "links" = zijde L, "antraciet structuur" = 7016-SL, "Sattler Lumera" = arcoll sat-lum enz.
+- Verzin niets. Ontbreekt iets verplichts, vraag er dan naar, kort en gebundeld. Bij twijfel (bijv. "wit" zonder code) vraag je wat er bedoeld wordt.
+- Kan iets niet (te breed, uitval niet leverbaar, combinatie niet toegestaan): leg het uit en geef de mogelijkheden, maar kies niet zelf.
+- Als alles is ingevuld: lees een korte samenvatting voor met wat er besteld wordt, de prijs, de levertijd en eventuele waarschuwingen, en vraag: "Zal ik hem klaarzetten?". Pas na een duidelijk ja: klaarzetten.
+- Vraag daarna of de robot hem bij de leverancier mag invullen; start alleen na ja. Bestellen alleen als de gebruiker daar expliciet om vraagt en bevestigt.
+- Je antwoorden worden vaak voorgelezen: schrijf kort en spreekbaar Nederlands, maximaal drie zinnen, geen opsommingstekens, geen codes als het niet hoeft, bedragen als "vierduizend negenhonderdtachtig euro" of "€ 4.980".`}
+
+async function aiExec(name,inp){
+ const o=cur();const need=()=>{if(!cur())throw new Error('Er is geen order geopend. Maak eerst een nieuwe order.');if(cur().status!=='concept')throw new Error(`Order ${cur().nr} heeft status "${stLabel(cur().status)}" en kan niet meer worden aangepast. Maak een nieuwe order of zet hem eerst terug naar concept.`);return cur()};
+ switch(name){
+  case 'nieuwe_order':newOrder();return orderVoorAI(cur());
+  case 'open_order':{const x=orders.find(z=>z.nr===String(inp.nr).toUpperCase());if(!x)throw new Error('Order niet gevonden.');sel=x.id;renderList();renderOrder();return orderVoorAI(x)}
+  case 'zet_klant':{const t=need();t.klant={...t.klant};for(const k of ['naam','straat','nr','pc','plaats','tel','mail'])if(inp[k]!=null)t.klant[k]=k==='pc'&&PC.test(inp[k])?normPc(inp[k]):String(inp[k]).trim();if(t.levering==='klant')t.adres={straat:t.klant.straat,nr:t.klant.nr,pc:t.klant.pc,plaats:t.klant.plaats};break}
+  case 'zet_order':{const t=need();if(inp.ref!=null)t.ref=String(inp.ref);if(inp.opmerking!=null)t.opmerking=String(inp.opmerking).slice(0,300);
+   if(inp.leverweek){const w=String(inp.leverweek).toLowerCase().startsWith('vroeg')?minWeek():String(inp.leverweek);if(!/^\d{4}-W\d{2}$/.test(w))throw new Error('Leverweek moet de vorm 2026-W46 hebben.');t.leverweek=w}
+   if(inp.levering){t.levering=inp.levering;t.adres=inp.levering==='dealer'?{...settings.winkel}:inp.levering==='klant'?{straat:t.klant.straat,nr:t.klant.nr,pc:t.klant.pc,plaats:t.klant.plaats}:null}
+   if(inp.adres&&t.levering!=='afhalen')t.adres={...(t.adres||{}),...inp.adres,pc:inp.adres.pc?normPc(inp.adres.pc):(t.adres||{}).pc};break}
+  case 'zet_regel':{const t=need();let i=inp.regel?inp.regel-1:t.lines.length;
+   if(!inp.regel){const j=t.lines.findIndex(l=>JSON.stringify(l.values)===JSON.stringify(newLine(l.productId).values));if(j>=0)i=j} // lege standaardregel hergebruiken
+   if(i<0||i>t.lines.length)throw new Error(`Regel ${inp.regel} bestaat niet; er zijn ${t.lines.length} regels.`);
+   if(i===t.lines.length||(inp.productId&&inp.productId!==t.lines[i].productId)){if(!inp.productId&&i===t.lines.length)throw new Error('Geef productId mee voor een nieuwe regel.');const nl=newLine(inp.productId);if(i===t.lines.length)t.lines.push(nl);else t.lines[i]=nl}
+   const l=t.lines[i],P=PROD(l.productId),flat=sectionsFor(P).flat;const fout=[];
+   if(inp.aantal!=null)l.aantal=+inp.aantal;
+   for(const [k,v0] of Object.entries(inp.waarden||{})){const f=flat.find(f=>f.id===k);if(!f){fout.push(`onbekend veld ${k}`);continue}let v=v0;
+    if(f.type==='sel'||f.type==='radio'){v=String(v);if(!f.o.some(o=>o[0]===v)){const m=f.o.find(o=>o[1].toLowerCase().startsWith(v.toLowerCase()));if(m)v=m[0];else{fout.push(`${k}: "${v0}" bestaat niet (kies uit ${f.o.map(o=>o[0]).join(', ')})`);continue}}}
+    else if(f.type==='color'){const c=colorByLabel(v)||colorByLabel('RAL '+String(v).replace(/^ral\s*/i,''));if(!c){fout.push(`${k}: kleur "${v0}" staat niet in de Ambiance-kleurencollectie`);continue}v=c.id}
+    else if(f.type==='mm'||f.type==='num')v=+v;else if(f.type==='check')v=!!v&&v!=='nee';else v=String(v);
+    l.values={...l.values,[k]:v}}
+   if(fout.length){renderOrder();markDirty(t);throw new Error('Deels ingevuld. Niet gelukt: '+fout.join('; '))}
+   break}
+  case 'verwijder_regel':{const t=need();if(!t.lines[inp.regel-1])throw new Error('Die regel bestaat niet.');t.lines.splice(inp.regel-1,1);break}
+  case 'controleer':return orderVoorAI(o);
+  case 'vernieuw':{if(!o)throw new Error('Geen order geopend.');await pollOrder(o,false);return orderVoorAI(cur())}
+  case 'klaarzetten':{const t=need();const {miss,bad,warn}=orderCheck(t);
+   if(miss.length||bad.length)throw new Error('Nog niet compleet: '+[...miss,...bad].map(x=>x.label).join('; '));
+   if(!JA.test(lastUser))throw new Error('De gebruiker heeft nog geen ja gezegd. Lees de samenvatting met prijs en levertijd voor en vraag om bevestiging.');
+   if(warn.length&&!inp.bevestigd_waarschuwingen)throw new Error('Er zijn waarschuwingen. Lees ze voor en vraag of de gebruiker toch door wil.');
+   t.confirmedAt=Date.now();const ok=await setStatus(t,'klaar','Order bevestigd en klaargezet via de Claude-assistent (spraak/chat).'+(warn.length?' Waarschuwingen gecontroleerd: '+warn.join(' | '):''));
+   if(!ok&&online())throw new Error('Opslaan in GitHub mislukte.');return orderVoorAI(cur())}
+  case 'robot_starten':{if(!o)throw new Error('Geen order geopend.');const a=inp.actie;
+   if(!online())throw new Error('De hub is niet gekoppeld aan GitHub, dus de robot kan niet starten. Koppel via Instellingen.');
+   if(!JA.test(lastUser)&&!(a==='invullen'&&/robot|invullen/i.test(lastUser)))throw new Error('Vraag eerst toestemming aan de gebruiker.');
+   if(a==='bestellen'&&!BESTEL.test(lastUser))throw new Error('Bestellen alleen als de gebruiker daar zelf expliciet om vraagt.');
+   if(a==='invullen'&&!['klaar','probleem'].includes(o.status))throw new Error(`Status is "${stLabel(o.status)}"; invullen kan alleen als de order klaargezet is.`);
+   if(a==='bestellen'&&o.status!=='ingevuld')throw new Error('Bestellen kan pas als de order bij de leverancier is ingevuld.');
+   if(!(await setStatus(o,'verwerking',a==='bestellen'?'Robot gestart via de Claude-assistent: bestellen.':'Robot gestart via de Claude-assistent: invullen.')))throw new Error('Opslaan mislukte.');
+   try{await startRobot(o,a)}catch(e){await setStatus(o,a==='bestellen'?'ingevuld':'klaar','Robot kon niet starten: '+ghFout(e));throw new Error('Robot starten mislukte: '+ghFout(e))}
+   return 'De robot is gestart. Het duurt meestal 2 tot 6 minuten; de hub laat het zien als hij klaar is.'}
+  default:throw new Error('Onbekend gereedschap.');
+ }
+ const t=cur();if(t){markDirty(t);renderList();renderOrder()}
+ return orderVoorAI(t);
+}
+
+async function aiCall(messages){
+ if(!ai.key)throw new Error('Geen Claude-sleutel ingesteld. Vul hem in via \'Sleutel\' bovenin de assistent.');
+ const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',signal:aiCtl.signal,headers:{'content-type':'application/json','x-api-key':ai.key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+  body:JSON.stringify({model:ai.model||'claude-sonnet-5-5',max_tokens:1200,system:aiSystem(),tools:AI_TOOLS,messages})});
+ if(!res.ok){let m='';try{m=(await res.json()).error?.message}catch(e){}throw new Error(res.status===401?'De Claude-sleutel klopt niet. Pas hem aan bij Instellingen.':res.status===429?'Claude is even overbelast of het tegoed is op. Probeer het zo opnieuw.':`Claude gaf een fout (${res.status}) ${m||''}`)}
+ return res.json()}
+
+async function aiSend(text){
+ text=String(text||'').trim();if(!text||aiBusy)return;
+ lastUser=text;aiBusy=true;aiCtl=new AbortController();bubble('user',text);const think=bubble('ai','…',true);setMic(false);
+ const ctx=`\n\n[Actuele order in de hub: ${orderVoorAI(cur())}]`;
+ chat.push({role:'user',content:text+ctx});
+ try{
+  for(let r=0;r<10;r++){
+   const res=await aiCall(chat);chat.push({role:'assistant',content:res.content});
+   const uses=res.content.filter(c=>c.type==='tool_use');const said=res.content.filter(c=>c.type==='text').map(c=>c.text).join('\n').trim();
+   if(!uses.length){think.remove();if(said){bubble('ai',said);speak(said)}break}
+   if(said)think.querySelector('p').textContent=said;
+   const results=[];
+   for(const u of uses){let out,err=false;try{out=await aiExec(u.name,u.input||{})}catch(e){out='Fout: '+e.message;err=true}results.push({type:'tool_result',tool_use_id:u.id,content:String(out),...(err?{is_error:true}:{})});tick(u.name,err)}
+   chat.push({role:'user',content:results});
+  }
+ }catch(e){think.remove();if(e.name!=='AbortError')bubble('err',e.message)}
+ finally{aiBusy=false;aiCtl=null;trimChat()}
+}
+function trimChat(){
+ // houd het gesprek kort: oude orderstanden inkorten en maximaal ~30 berichten
+ chat.forEach((m,i)=>{if(i<chat.length-4&&typeof m.content==='string')m.content=m.content.replace(/\n\n\[Actuele order in de hub: [\s\S]*\]$/,'');if(i<chat.length-4&&Array.isArray(m.content))m.content.forEach(c=>{if(c.type==='tool_result'&&typeof c.content==='string'&&c.content.length>400)c.content=c.content.slice(0,200)+' …'})});
+ while(chat.length>30){const i=chat.findIndex((m,j)=>j>0&&m.role==='user'&&typeof m.content==='string');if(i<=0)break;chat=chat.slice(i)}}
+const TOOLNL={nieuwe_order:'Nieuwe order',open_order:'Order geopend',zet_klant:'Klant ingevuld',zet_order:'Ordergegevens ingevuld',zet_regel:'Regel ingevuld',verwijder_regel:'Regel verwijderd',controleer:'Gecontroleerd',klaarzetten:'Klaargezet',robot_starten:'Robot gestart',vernieuw:'Vernieuwd'};
+function tick(name,err){const l=$('#cw-log');const d=document.createElement('div');d.className='cw-tick'+(err?' bad':'');d.textContent=(err?'Niet gelukt: ':'')+(TOOLNL[name]||name);l.appendChild(d);l.scrollTop=l.scrollHeight}
+function bubble(kind,text,thinking){const l=$('#cw-log');const d=document.createElement('div');d.className='cw-msg cw-'+kind;d.innerHTML=`<p></p>`;d.querySelector('p').textContent=text;if(thinking)d.classList.add('thinking');l.appendChild(d);l.scrollTop=l.scrollHeight;return d}
+
+/* spraak */
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;let rec=null,listening=false;
+function setMic(on){listening=on;const b=$('#cw-mic');if(b){b.classList.toggle('on',on);b.setAttribute('aria-pressed',on);b.title=on?'Stop met luisteren':'Inspreken'}}
+function listen(){if(!SR){bubble('err','Spraak werkt in deze browser niet. Gebruik Chrome of Edge, of typ je bericht.');return}
+ if(listening){rec&&rec.stop();return}
+ speechSynthesis.cancel();rec=new SR();rec.lang='nl-NL';rec.interimResults=true;rec.continuous=false;
+ const inp=$('#cw-in');let finalT='';
+ rec.onresult=e=>{let t='';for(const r of e.results)t+=r[0].transcript;inp.value=t;if(e.results[e.results.length-1].isFinal)finalT=t};
+ rec.onerror=e=>{setMic(false);if(e.error==='not-allowed')bubble('err','De microfoon is geblokkeerd. Sta hem toe via het slotje in de adresbalk.');else if(e.error!=='no-speech'&&e.error!=='aborted')bubble('err','Spraakherkenning stopte ('+e.error+').')};
+ rec.onend=()=>{setMic(false);const t=(finalT||inp.value).trim();if(t){inp.value='';aiSend(t)}};
+ try{rec.start();setMic(true)}catch(e){setMic(false)}}
+function speak(text){if(!ai.voorlezen||!window.speechSynthesis)return afterSpeak();
+ speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text.replace(/[*_#`]/g,''));u.lang='nl-NL';const v=speechSynthesis.getVoices().find(v=>/^nl/i.test(v.lang));if(v)u.voice=v;u.rate=1.05;u.onend=afterSpeak;speechSynthesis.speak(u)}
+function afterSpeak(){if(ai.gesprek&&$('#cw').classList.contains('open')&&!aiBusy)setTimeout(listen,250)}
+
+/* paneel */
+document.body.insertAdjacentHTML('beforeend',`<button class="cw-fab" id="cw-fab" type="button" aria-expanded="false" aria-controls="cw"><span class="cw-dot" aria-hidden="true"></span>Vraag Claude</button>
+<section class="cw" id="cw" aria-label="Claude-assistent" hidden>
+ <header><b>Claude</b><span>Spreek een order in of stel een vraag</span><button type="button" id="cw-x" aria-label="Sluiten">×</button></header>
+ <div class="cw-opts"><label><input type="checkbox" id="cw-tts"> Voorlezen</label><label><input type="checkbox" id="cw-conv"> Gespreksmodus</label><button type="button" id="cw-new" class="cw-link">Nieuw gesprek</button><button type="button" id="cw-key" class="cw-link">Sleutel</button></div>
+ <div class="cw-log" id="cw-log" aria-live="polite"><div class="cw-msg cw-ai"><p>Hoi! Druk op de microfoon en vertel welke order je wilt invullen. Bijvoorbeeld: "Nieuwe order voor familie Jansen in Oisterwijk, een Carré 110 van vier meter breed met 1 meter 20 uitval."</p></div></div>
+ <form class="cw-bar" id="cw-f"><button type="button" class="cw-mic" id="cw-mic" aria-pressed="false" title="Inspreken"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21h2v-2.1A7 7 0 0 0 19 12Z"/></svg></button><textarea id="cw-in" rows="1" placeholder="Typ of spreek je bericht" aria-label="Bericht aan Claude"></textarea><button class="btn pri sm" type="submit" id="cw-send">Stuur</button></form>
+</section>`);
+$('#cw-tts').checked=ai.voorlezen;$('#cw-conv').checked=ai.gesprek;
+$('#cw-tts').onchange=e=>{ai.voorlezen=e.target.checked;aiSave();if(!ai.voorlezen)speechSynthesis?.cancel()};
+$('#cw-conv').onchange=e=>{ai.gesprek=e.target.checked;aiSave();if(ai.gesprek&&!listening&&!aiBusy)listen()};
+const cwOpen=open=>{$('#cw').hidden=!open;$('#cw').classList.toggle('open',open);$('#cw-fab').setAttribute('aria-expanded',open);if(open){$('#cw-in').focus();if(!ai.key&&!$('#cw-log .cw-err'))bubble('err','Vul eerst een Claude-sleutel in via \'Sleutel\' hierboven.')}else{rec&&rec.abort();speechSynthesis?.cancel()}};
+$('#cw-fab').onclick=()=>cwOpen($('#cw').hidden);$('#cw-x').onclick=()=>cwOpen(false);
+$('#cw-mic').onclick=listen;
+$('#cw-new').onclick=()=>{aiCtl&&aiCtl.abort();chat=[];$('#cw-log').innerHTML='';bubble('ai','Nieuw gesprek. Waar kan ik mee helpen?')};
+$('#cw-f').onsubmit=e=>{e.preventDefault();const t=$('#cw-in').value;$('#cw-in').value='';aiSend(t)};
+$('#cw-in').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();$('#cw-f').requestSubmit()}});
+
+function aiKeyModal(){confirmModal('Claude-assistent',`<p style="margin:0;font-size:14px">De assistent praat rechtstreeks vanuit deze browser met Claude. De sleutel blijft alleen in deze browser bewaard.</p>
+ <div class="fld"><label for="s-ai">Anthropic API-sleutel</label><input class="in" id="s-ai" type="password" value="${esc(ai.key)}" autocomplete="off" placeholder="sk-ant-…"><span class="hint">Maak een sleutel op console.anthropic.com → API keys. Tip: maak een aparte sleutel met een bestedingslimiet.</span></div>
+ <div class="fld"><label for="s-model">Model</label><input class="in" id="s-model" value="${esc(ai.model)}"></div><p class="em" id="s-aimsg" style="margin:0;font-size:13px"></p>`,'Opslaan',()=>{
+ const k=$('#s-ai').value.trim();if(k&&!/^sk-ant-/.test(k)){$('#s-aimsg').textContent='Een Anthropic-sleutel begint met sk-ant-.';return false}
+ ai.key=k;ai.model=$('#s-model').value.trim()||'claude-sonnet-5-5';aiSave();toast(k?'Claude-sleutel opgeslagen.':'Claude-sleutel verwijderd.');return true})}
+$('#cw-key').onclick=aiKeyModal;
+
 </script>
 
 </body>
