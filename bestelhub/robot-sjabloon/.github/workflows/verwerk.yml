@@ -1,0 +1,71 @@
+name: Verwerk order
+run-name: ${{ inputs.actie }} ${{ inputs.order }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      order:
+        description: Ordernummer uit de Bestelhub (bijv. HUB-0002)
+        required: true
+      actie:
+        description: invullen of bestellen
+        required: true
+        default: invullen
+        type: choice
+        options: [invullen, bestellen]
+
+# Eén robot tegelijk, zodat de browserstatus van het portaal niet door elkaar loopt.
+concurrency:
+  group: bestelrobot
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  verwerk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      ORDER: ${{ inputs.order }}
+      ACTIE: ${{ inputs.actie }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Robot installeren
+        working-directory: robot
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+
+      - name: Order invullen in Chrome
+        working-directory: robot
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ROBOT_MODEL: ${{ vars.ROBOT_MODEL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: node verwerk.mjs "$ORDER" "$ACTIE"
+
+      - name: Schermafbeeldingen bewaren
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schermafbeeldingen-${{ inputs.order }}-${{ github.run_number }}
+          path: robot/screenshots
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Resultaat terugzetten in de hub
+        if: always()
+        run: |
+          git config user.name "Bestelhub-robot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add orders state
+          if git diff --cached --quiet; then echo "Niets te bewaren"; exit 0; fi
+          git commit -m "Robot: $ACTIE $ORDER"
+          for i in 1 2 3; do git pull --rebase --autostash && git push && exit 0; sleep 5; done
+          exit 1

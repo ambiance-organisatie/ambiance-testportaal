@@ -25,3 +25,9 @@ Een tweede, los testportaal met de opbouw van een SaaS order-entry configurator 
 - Gegevens blijven in de eigen browser (localStorage); via het gebruikersmenu zet je de testdata terug
 
 Live: https://ambiance-organisatie.github.io/ambiance-testportaal/configurator/
+
+## Bestelhub (`/bestelhub/`)
+
+Orderinvoer voor Ambiance in huisstijl, met controles (nog in te vullen, waarschuwingen, bevestiging met levertijd). Bevat zelf geen gegevens: orders staan als JSON in een privé-repository (standaard `ambiance-organisatie/bestelhub-data`), die de pagina leest en schrijft met een fine-grained token van de gebruiker. De knop *Robot laten invullen/bestellen* start daar een GitHub Action die Chrome opent en de order met Claude in het leveranciersportaal invult. De code voor die privé-repository staat in `bestelhub/robot-sjabloon/`.
+
+Live: https://ambiance-organisatie.github.io/ambiance-testportaal/bestelhub/

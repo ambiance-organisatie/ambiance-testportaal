@@ -1,0 +1,9 @@
+{
+  "name": "bestelhub-robot",
+  "private": true,
+  "type": "module",
+  "description": "Vult orders uit de Bestelhub in het leveranciersportaal in met Chrome en Claude.",
+  "dependencies": {
+    "playwright": "1.56.0"
+  }
+}
