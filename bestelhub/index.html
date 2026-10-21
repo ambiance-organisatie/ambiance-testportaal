@@ -73,6 +73,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 
 .chip{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:1px 9px;font-size:12px;font-weight:500;white-space:nowrap;border:1px solid transparent}
 .st-concept{background:var(--surface-2);color:var(--mute);border-color:var(--line)}
+.st-offerte{background:#FFF4E8;color:#9A4F0B}
 .st-klaar{background:var(--navy-soft);color:var(--navy)}
 .st-verwerking{background:var(--orange-soft);color:var(--orange-dk)}
 .st-ingevuld{background:var(--orange);color:#fff}
@@ -369,7 +370,7 @@ function lineWarnings(P,v,aantal){const w=[];
  return w}
 
 /* ================= order-niveau ================= */
-const STATUS=[['concept','Concept'],['klaar','Klaar voor leverancier'],['verwerking','Wordt ingevuld'],['ingevuld','Ingevuld bij leverancier'],['besteld','Besteld'],['probleem','Probleem']];
+const STATUS=[['concept','Concept'],['offerte','Offerte bij klant'],['klaar','Akkoord klant'],['verwerking','Wordt ingevuld'],['ingevuld','Ingevuld bij leverancier'],['besteld','Besteld'],['probleem','Probleem']];
 const stLabel=s=>(STATUS.find(x=>x[0]===s)||[,s])[1];
 const LEV={dealer:'Afleveren bij de winkel',klant:'Afleveren bij de klant',afhalen:'Afhalen bij de leverancier'};
 const SUPPLIERS=[['allround-test','Allround (testportaal Konfigo)','https://ambiance-organisatie.github.io/ambiance-testportaal/configurator/']];
@@ -382,9 +383,9 @@ function orderCheck(o){
  if(k.pc&&!PC.test(k.pc))bad.push({label:'Klant: postcode heeft niet het formaat 1234 AB',id:'k-pc'});
  if(k.tel&&!/^[0-9+\s()-]{10,15}$/.test(k.tel))bad.push({label:'Klant: telefoonnummer lijkt niet te kloppen',id:'k-tel'});
  if(k.mail&&!/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(k.mail))bad.push({label:'Klant: e-mailadres lijkt niet te kloppen',id:'k-mail'});
- need(o.ref,'Referentie','o-ref');need(o.levering,'Levering','o-lev');need(o.leverweek,'Gewenste leverweek','o-week');
+ need(o.ref,'Referentie','o-ref');need(o.offerteBij,'Offerte gemaakt: aan huis of in de showroom','o-bij');need(o.leverweek,'Gewenste leverweek','o-week');
  if(o.leverweek&&o.leverweek<minWeek())bad.push({label:`Leverweek ${fmtWeek(o.leverweek)} is te vroeg; vroegst mogelijk ${fmtWeek(minWeek())}`,id:'o-week'});
- if(o.levering&&o.levering!=='afhalen'){const a=o.adres||{};need(a.straat,'Afleveradres: straat','a-straat');need(a.nr,'Afleveradres: huisnummer','a-nr');need(a.pc,'Afleveradres: postcode','a-pc');need(a.plaats,'Afleveradres: plaats','a-plaats');if(a.pc&&!PC.test(a.pc))bad.push({label:'Afleveradres: postcode heeft niet het formaat 1234 AB',id:'a-pc'})}
+ if(o.levering&&o.levering!=='afhalen'){const a=o.adres||{};need(a.straat,'Winkeladres: straat','a-straat');need(a.nr,'Winkeladres: huisnummer','a-nr');need(a.pc,'Afleveradres: postcode','a-pc');need(a.plaats,'Afleveradres: plaats','a-plaats');if(a.pc&&!PC.test(a.pc))bad.push({label:'Afleveradres: postcode heeft niet het formaat 1234 AB',id:'a-pc'})}
  if(!(o.lines||[]).length)miss.push({label:'Minstens één regel',id:'add-line'});
  (o.lines||[]).forEach((l,i)=>{const P=PROD(l.productId);if(!P){miss.push({label:`Regel ${i+1}: product`,id:`l${i}-product`});return}
   const e=validateLine(P,l.values||{},l.aantal),flat=sectionsFor(P).flat;
@@ -441,7 +442,7 @@ function addNote(o,kind,text,from='Ambiance'){o.notes=o.notes||[];o.notes.push({
 function nextNr(){const max=orders.reduce((m,o)=>Math.max(m,+String(o.nr||'').replace(/\D/g,'')||0),0);return 'HUB-'+String(max+1).padStart(4,'0')}
 function newOrder(){
  const nr=nextNr();
- const o={id:nr,nr,status:'concept',createdAt:Date.now(),updatedAt:Date.now(),leverancier:'allround-test',klant:{naam:'',straat:'',nr:'',pc:'',plaats:'',tel:'',mail:''},ref:'',levering:'dealer',adres:{...settings.winkel},leverweek:'',opmerking:'',lines:[newLine('carre110')],supplier:{offerte:'',order:''},notes:[]};
+ const o={id:nr,nr,status:'concept',createdAt:Date.now(),updatedAt:Date.now(),leverancier:'allround-test',klant:{naam:'',straat:'',nr:'',pc:'',plaats:'',tel:'',mail:''},ref:'',offerteBij:'',levering:'dealer',adres:{...settings.winkel},leverweek:'',opmerking:'',lines:[newLine('carre110')],supplier:{offerte:'',order:''},notes:[]};
  orders.push(o);markDirty(o);sel=nr;renderList();renderOrder();toast(`${nr} aangemaakt. Vergeet niet op te slaan.`)}
 function newLine(pid){const P=PROD(pid);const values={};sectionsFor(P).flat.forEach(f=>{if(f.def!==undefined)values[f.id]=f.def});return{productId:pid,values,aantal:1}}
 const cur=()=>orders.find(o=>o.id===sel);
@@ -512,15 +513,16 @@ function renderOrder(){
  main.innerHTML=`<section class="panel ${ro?'ro':''}" id="op">
  <div class="ohead"><h1>${esc(o.nr)}</h1><span class="chip st-${esc(o.status)}">${esc(stLabel(o.status))}</span><span class="sp"></span>
   ${o.status==='concept'?`<button class="btn sm" type="button" id="save">Opslaan</button><button class="btn danger sm" type="button" id="del-order">Order verwijderen</button>`:(o.status!=='verwerking'&&o.status!=='besteld'?`<button class="btn sm" type="button" id="to-concept">Terug naar concept</button>`:'')}</div>
- <ol class="flow" aria-label="Voortgang">${STATUS.slice(0,5).map((s,i)=>`<li class="${s[0]===o.status?'on':(o.status!=='probleem'&&i<idx)?'done':''}">${esc(s[1])}</li>`).join('')}</ol>
+ <ol class="flow" aria-label="Voortgang">${STATUS.slice(0,6).map((s,i)=>`<li class="${s[0]===o.status?'on':(o.status!=='probleem'&&i<idx)?'done':''}">${esc(s[1])}</li>`).join('')}</ol>
  <div class="two" style="padding:0 16px 16px"><div style="min-width:0;display:grid;gap:16px">
  <div class="box"><h3>Klant en levering</h3><div class="grid">
   ${[['k-naam','Naam',1],['k-tel','Telefoon'],['k-mail','E-mail'],['k-straat','Straat',1],['k-nr','Huisnummer',1],['k-pc','Postcode',1],['k-plaats','Plaats',1]].map(([id,l,r])=>`<div class="fld" id="w-${id}"><label for="${id}">${l}${r?' <span class="req">*</span>':''}</label><input class="in" id="${id}" autocomplete="off"><span class="em"></span></div>`).join('')}
   <div class="fld" id="w-o-ref"><label for="o-ref">Referentie <span class="req">*</span></label><input class="in" id="o-ref" maxlength="60" autocomplete="off"><span class="em"></span></div>
   <div class="fld"><label for="o-sup">Leverancier</label><select class="in" id="o-sup">${SUPPLIERS.map(s=>`<option value="${s[0]}">${esc(s[1])}</option>`).join('')}</select></div>
   <div class="fld" id="w-o-week"><label for="o-week">Gewenste leverweek <span class="req">*</span></label><input class="in" id="o-week" type="week" min="${minWeek()}"><span class="hint">Vroegst: ${fmtWeek(minWeek())}</span><span class="em"></span></div>
-  <div class="fld" id="w-o-lev" style="grid-column:1/-1"><span class="lb">Levering <span class="req">*</span></span><div class="radios" id="o-lev">${Object.entries(LEV).map(([k,l])=>`<label><input type="radio" name="o-lev" value="${k}"> ${l}</label>`).join('')}</div><span class="em"></span></div>
-  <div id="adr" class="grid" style="grid-column:1/-1">${[['a-straat','Afleveradres: straat'],['a-nr','Huisnummer'],['a-pc','Postcode'],['a-plaats','Plaats']].map(([id,l])=>`<div class="fld" id="w-${id}"><label for="${id}">${l} <span class="req">*</span></label><input class="in" id="${id}" autocomplete="off"><span class="em"></span></div>`).join('')}</div>
+  <div class="fld" id="w-o-bij" style="grid-column:1/-1"><span class="lb">Offerte gemaakt <span class="req">*</span></span><div class="radios" id="o-bij"><label><input type="radio" name="o-bij" value="huis"> Aan huis bij de klant</label><label><input type="radio" name="o-bij" value="showroom"> In de showroom</label></div><span class="em"></span></div>
+  <div class="fld" id="w-o-lev" style="grid-column:1/-1"><span class="lb">Levering</span><p style="margin:2px 0 0;font-size:14px">Altijd bij de winkel. De leverancier levert af op het winkeladres hieronder.</p><span hidden><input type="radio" name="o-lev" value="dealer" checked></span><span class="em"></span></div>
+  <div id="adr" class="grid" style="grid-column:1/-1">${[['a-straat','Winkeladres: straat'],['a-nr','Huisnummer'],['a-pc','Postcode'],['a-plaats','Plaats']].map(([id,l])=>`<div class="fld" id="w-${id}"><label for="${id}">${l} <span class="req">*</span></label><input class="in" id="${id}" autocomplete="off"><span class="em"></span></div>`).join('')}</div>
   <div class="fld" style="grid-column:1/-1"><label for="o-opm">Opmerking voor de leverancier</label><textarea class="in" id="o-opm" rows="2" maxlength="300" placeholder="Bijvoorbeeld montage-informatie of losinstructies"></textarea><span class="hint"><span id="opm-n">0</span>/300</span></div>
  </div></div>
  <div><h2 class="hd">Regels</h2><div id="lines">${(o.lines||[]).map((l,i)=>lineHTML(l,i,ro)).join('')}</div>
@@ -533,7 +535,7 @@ function renderOrder(){
  // waarden
  const k=o.klant||{};[['k-naam','naam'],['k-tel','tel'],['k-mail','mail'],['k-straat','straat'],['k-nr','nr'],['k-pc','pc'],['k-plaats','plaats']].forEach(([id,f])=>$('#'+id).value=k[f]||'');
  $('#o-ref').value=o.ref||'';$('#o-sup').value=sup[0];$('#o-week').value=o.leverweek||'';$('#o-opm').value=o.opmerking||'';$('#opm-n').textContent=($('#o-opm').value||'').length;
- $$('[name="o-lev"]').forEach(r=>r.checked=r.value===o.levering);
+ $$('[name="o-bij"]').forEach(r=>r.checked=r.value===o.offerteBij);
  const a=o.adres||{};[['a-straat','straat'],['a-nr','nr'],['a-pc','pc'],['a-plaats','plaats']].forEach(([id,f])=>$('#'+id).value=a[f]||'');
  $('#adr').hidden=o.levering==='afhalen';
  (o.lines||[]).forEach((l,i)=>{fillLine(l,i);applyLine(i)});
@@ -543,7 +545,7 @@ function renderOrder(){
 function readOrder(){const o=cur();const g=id=>$('#'+id).value.trim();
  o.klant={naam:g('k-naam'),tel:g('k-tel'),mail:g('k-mail'),straat:g('k-straat'),nr:g('k-nr'),pc:g('k-pc'),plaats:g('k-plaats')};
  o.ref=g('o-ref');o.leverancier=$('#o-sup').value;o.leverweek=$('#o-week').value;o.opmerking=$('#o-opm').value.trim();
- o.levering=($('[name="o-lev"]:checked')||{}).value||'';
+ o.levering='dealer';o.offerteBij=($('[name="o-bij"]:checked')||{}).value||'';
  o.adres=o.levering==='afhalen'?null:{straat:g('a-straat'),nr:g('a-nr'),pc:g('a-pc'),plaats:g('a-plaats')}}
 function changed(){const o=cur();if(!o||o.status!=='concept')return;readOrder();renderSide();markDirty(o);renderList()}
 function bindOrder(){
@@ -576,7 +578,7 @@ function renderSide(){
  const listBtns=a=>a.map(x=>`<li><button class="lnk" type="button" data-goto="${esc(x.id)}">${esc(x.label)}</button></li>`).join('');
  let action='';const runs=`https://github.com/${esc(cfg.repo)}/actions/workflows/verwerk.yml`;
  const cmd=t=>`<details style="margin-top:8px;font-size:13px"><summary style="cursor:pointer;color:var(--mute)">Of laat Claude het in het gesprek doen</summary><div class="cmd" style="margin-top:6px"><code class="cmdt">${t}</code><button class="btn sm" type="button" data-copy>Kopieer</button></div></details>`;
- if(o.status==='concept')action=`<button class="btn pri" type="button" id="ready" style="width:100%">Controleren en klaarzetten</button>`;
+ if(o.status==='concept')action=`<button class="btn pri" type="button" id="ready" style="width:100%">Controleren en offerte maken</button>`;
  else if(o.status==='klaar'||o.status==='probleem')action=`<div class="box act"><h3>${o.status==='probleem'?'Opnieuw laten invullen':'Laten invullen'} bij ${esc(sup[1].split(' (')[0])}</h3><p style="margin:0 0 10px;font-size:14px">De robot opent op een GitHub-server een Chrome-tabblad, vult de order in het leveranciersportaal in en zet het offertenummer en zijn opmerkingen hieronder bij de notities. Hij bestelt nog niet.</p><button class="btn pri" type="button" id="robot-fill" style="width:100%" ${online()?'':'disabled'}>Robot laten invullen</button>${online()?'':'<p style="margin:6px 0 0;font-size:12.5px;color:var(--mute)">Koppel eerst GitHub via Instellingen.</p>'}${cmd(`Verwerk ${esc(o.nr)} uit de Bestelhub in het leveranciersportaal`)}</div>`;
  else if(o.status==='verwerking')action=`<div class="box act"><h3>De robot is bezig</h3><p style="margin:0 0 10px;font-size:14px">Dit duurt meestal 2 tot 6 minuten. De hub controleert elke 15 seconden of hij klaar is.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" type="button" id="refresh">Nu vernieuwen</button><a class="btn sm" href="${runs}" target="_blank" rel="noopener" style="text-decoration:none">Meekijken in GitHub</a></div></div>`;
  else if(o.status==='ingevuld')action=`<div class="box act"><h3>Klaar om te bestellen</h3><p style="margin:0 0 10px;font-size:14px">Staat bij de leverancier als <b class="mono">${esc(o.supplier?.offerte||'—')}</b>. Controleer de notities. Bestellen kan niet ongedaan worden gemaakt.</p><button class="btn pri" type="button" id="robot-order" style="width:100%" ${online()?'':'disabled'}>Robot laten bestellen</button>${cmd(`Bestel ${esc(o.nr)} bij de leverancier`)}</div>`;
@@ -599,18 +601,18 @@ function renderSide(){
  $('#refresh')&&($('#refresh').onclick=()=>pollOrder(o,true));
 }
 function markAllErrors(){submitted=true;(cur().lines||[]).forEach((l,i)=>applyLine(i));const {miss,bad}=orderCheck(cur());const ids=new Set([...miss,...bad].map(x=>x.id));
- [['k-naam'],['k-straat'],['k-nr'],['k-pc'],['k-plaats'],['k-tel'],['k-mail'],['o-ref'],['o-week'],['o-lev'],['a-straat'],['a-nr'],['a-pc'],['a-plaats']].forEach(([id])=>{const w=$('#w-'+id);if(!w)return;const it=[...miss,...bad].find(x=>x.id===id);w.classList.toggle('err',!!it);const em=w.querySelector('.em');if(em)em.textContent=it?(it.msg||(miss.includes(it)?'Verplicht veld.':it.label.split(': ').pop())):''})}
+ [['k-naam'],['k-straat'],['k-nr'],['k-pc'],['k-plaats'],['k-tel'],['k-mail'],['o-ref'],['o-week'],['o-bij'],['a-straat'],['a-nr'],['a-pc'],['a-plaats']].forEach(([id])=>{const w=$('#w-'+id);if(!w)return;const it=[...miss,...bad].find(x=>x.id===id);w.classList.toggle('err',!!it);const em=w.querySelector('.em');if(em)em.textContent=it?(it.msg||(miss.includes(it)?'Verplicht veld.':it.label.split(': ').pop())):''})}
 function readyFlow(){
  const o=cur();readOrder();markAllErrors();const {miss,bad,warn}=orderCheck(o);
  if(miss.length||bad.length){const f=[...miss,...bad][0];toast(`Nog niet compleet: ${miss.length+bad.length} ${miss.length+bad.length===1?'punt':'punten'}. Begin bij "${f.label}".`,1);goTo(f.id);return}
  const sup=SUPPLIERS.find(s=>s[0]===o.leverancier)||SUPPLIERS[0];const a=o.adres;
- confirmModal('Bevestig de order',`<p style="margin:0">Controleer de order en de levertijd. Na bevestigen staat hij klaar om bij <b>${esc(sup[1])}</b> te worden ingevuld.</p>
+ confirmModal('Offerte vastleggen',`<p style="margin:0">Controleer de offerte en de levertijd. Na vastleggen staat de offerte bij de klant. Zodra de klant akkoord geeft, geef je hem door aan <b>${esc(sup[1].split(' (')[0])}</b>.</p>
  <table class="sum"><tbody>${o.lines.map((l,i)=>{const P=PROD(l.productId);return `<tr><td>${i+1}</td><td><b>${esc(cfgName(P,l.values))}</b><div style="font-size:12.5px;color:var(--mute)">${summaryOf(P,l.values).map(([k,v])=>esc(k)+': '+esc(v)).join(' · ')}</div></td><td class="num">${l.aantal}×</td><td class="num">${eur(unitPrice(P,l.values)*l.aantal)}</td></tr>`}).join('')}
  ${toeslagOf(o)?`<tr><td></td><td>Verwerkingstoeslag kokers/hoeklijnen</td><td></td><td class="num">${eur(toeslagOf(o))}</td></tr>`:''}<tr><td></td><td><b>Adviesprijs incl. btw</b></td><td></td><td class="num"><b>${eur(orderTotal(o))}</b></td></tr></tbody></table>
- <dl class="kv"><dt>Klant</dt><dd>${esc(o.klant.naam)}<br><span style="color:var(--mute)">${esc(o.klant.straat)} ${esc(o.klant.nr)}, ${esc(o.klant.pc)} ${esc(o.klant.plaats)}${o.klant.tel?' · '+esc(o.klant.tel):''}</span></dd><dt>Referentie</dt><dd>${esc(o.ref)}</dd><dt>Levering</dt><dd>${esc(LEV[o.levering])}${a?`<br><span style="color:var(--mute)">${esc(a.straat)} ${esc(a.nr)}, ${esc(a.pc)} ${esc(a.plaats)}</span>`:''}</dd><dt>Levertijd</dt><dd class="lt">${esc(levertijdTxt(o.leverweek))}</dd>${o.opmerking?`<dt>Opmerking</dt><dd>${esc(o.opmerking)}</dd>`:''}</dl>
+ <dl class="kv"><dt>Klant</dt><dd>${esc(o.klant.naam)}<br><span style="color:var(--mute)">${esc(o.klant.straat)} ${esc(o.klant.nr)}, ${esc(o.klant.pc)} ${esc(o.klant.plaats)}${o.klant.tel?' · '+esc(o.klant.tel):''}</span></dd><dt>Referentie</dt><dd>${esc(o.ref)}</dd><dt>Offerte</dt><dd>${o.offerteBij==='showroom'?'In de showroom':'Aan huis bij de klant'}</dd><dt>Levering</dt><dd>${esc(LEV[o.levering])}${a?`<br><span style="color:var(--mute)">${esc(a.straat)} ${esc(a.nr)}, ${esc(a.pc)} ${esc(a.plaats)}</span>`:''}</dd><dt>Levertijd</dt><dd class="lt">${esc(levertijdTxt(o.leverweek))}</dd>${o.opmerking?`<dt>Opmerking</dt><dd>${esc(o.opmerking)}</dd>`:''}</dl>
  ${warn.length?`<div class="box warn"><h3>Let op: controleer dit (${warn.length})</h3><ul>${warn.map(w=>`<li>${esc(w)}</li>`).join('')}</ul></div><label class="check"><input type="checkbox" id="ack"> <span><b>Ik heb de waarschuwingen gecontroleerd en wil toch doorgaan</b></span></label><span class="em" id="ack-em" style="color:var(--err);font-size:13px"></span>`:''}`,
- 'Bevestigen en klaarzetten',()=>{if(warn.length&&!$('#ack').checked){$('#ack-em').textContent='Vink eerst aan dat je de waarschuwingen hebt gecontroleerd.';return false}
-  o.confirmedAt=Date.now();setStatus(o,'klaar','Order bevestigd en klaargezet voor de leverancier.'+(warn.length?' Waarschuwingen gecontroleerd: '+warn.join(' | '):''));return true})}
+ 'Offerte vastleggen',()=>{if(warn.length&&!$('#ack').checked){$('#ack-em').textContent='Vink eerst aan dat je de waarschuwingen hebt gecontroleerd.';return false}
+  o.offerteAt=Date.now();setStatus(o,'offerte',`Offerte gemaakt ${o.offerteBij==='showroom'?'in de showroom':'aan huis'}. Wacht op akkoord van de klant.`+(warn.length?' Waarschuwingen gecontroleerd: '+warn.join(' | '):''));return true})}
 async function setStatus(o,st,noteText){const prev=o.status;o.status=st;addNote(o,'info',noteText,'Ambiance');const ok=await saveOrder(o,`Hub: ${o.nr} → ${stLabel(st)}`);if(!ok&&online()){o.status=prev;o.notes.pop()}renderList();renderOrder();if(ok)toast(stLabel(st)+'.');return ok}
 function robotFlow(o,actie){
  const sup=SUPPLIERS.find(s=>s[0]===o.leverancier)||SUPPLIERS[0];
@@ -697,8 +699,12 @@ function opdrachtOpenen(o){
 const _renderSide=renderSide;renderSide=function(){
  _renderSide();const o=cur();if(!o)return;const side=$('#side');
  side.querySelector('#opdracht')?.remove();side.querySelector('#opd-act')?.remove();
+ if(o.status==='offerte'){
+  side.insertAdjacentHTML('beforeend',`<div class="box act" id="opd-act"><h3>Wacht op akkoord van de klant</h3><p style="margin:0 0 10px;font-size:14px">Offerte gemaakt ${o.offerteBij==='showroom'?'in de showroom':'aan huis'}${o.offerteAt?' op '+esc(new Date(o.offerteAt).toLocaleDateString('nl-NL')):''}. Pas na akkoord geef je hem door aan de leverancier.</p><button class="btn pri" type="button" id="akkoord" style="width:100%">Klant gaat akkoord</button></div>`);
+  $('#akkoord').onclick=()=>confirmModal('Akkoord van de klant',`<p style="margin:0">${esc(o.klant.naam)} gaat akkoord met de offerte van <b>${eur(orderTotal(o))}</b> incl. btw.</p><dl class="kv"><dt>Referentie</dt><dd>${esc(o.ref)}</dd><dt>Levertijd</dt><dd>${esc(levertijdTxt(o.leverweek))}</dd><dt>Levering</dt><dd>Bij de winkel</dd></dl>`,'Akkoord vastleggen',()=>{hub.akkoord(o.nr);return true});
+ }
  if(o.status==='klaar'||o.status==='probleem'){
-  side.querySelector('.box.act')?.insertAdjacentHTML('beforebegin',`<div class="box act" id="opd-act"><h3>${o.status==='probleem'?'Opnieuw naar de leverancier':'Klaar voor de leverancier'}</h3><p style="margin:0 0 10px;font-size:14px">Opent het leveranciersportaal in een nieuw Chrome-tabblad. Claude vult de order daar in. Hier zie je wat nog open staat, wat bevestigd is en de bevestiging van de leverancier. Er wordt nog niet besteld.</p><button class="btn pri" type="button" id="opd-go" style="width:100%">Nieuwe opdracht leverancier</button></div>`);
+  side.querySelector('.box.act')?.insertAdjacentHTML('beforebegin',`<div class="box act" id="opd-act"><h3>${o.status==='probleem'?'Opnieuw naar de leverancier':'Doorgeven aan de leverancier'}</h3><p style="margin:0 0 10px;font-size:14px">${o.acceptedAt?`Klant akkoord op ${esc(new Date(o.acceptedAt).toLocaleDateString('nl-NL'))}. `:''}Opent het leveranciersportaal in een nieuw Chrome-tabblad. Claude vult de order daar in. Hier zie je wat nog open staat, wat bevestigd is en de bevestiging van de leverancier. Er wordt nog niet besteld.</p><button class="btn pri" type="button" id="opd-go" style="width:100%">Nieuwe opdracht leverancier</button></div>`);
   $('#opd-go').onclick=()=>{const url=opdrachtOpenen(cur());window.open(url,'_blank','noopener')};
  }
  if(o.opdracht)side.insertAdjacentHTML('afterbegin',opdrachtHTML(o));
@@ -711,7 +717,8 @@ window.hub={
  vind(nr){const o=nr?orders.find(x=>x.nr===String(nr).toUpperCase()):cur();if(!o)throw new Error('Order niet gevonden.');return o},
  async doe(tool,inp){lastUser=String(inp?.__zegt||lastUser||'');const r=await aiExec(tool,inp||{});return JSON.parse(r)},
  controle(nr){const o=this.vind(nr);sel=o.id;renderList();renderOrder();return JSON.parse(orderVoorAI(o))},
- async klaarzetten(nr){const o=this.vind(nr);if(o.status!=='concept')return o.status;const {miss,bad,warn}=orderCheck(o);if(miss.length||bad.length)throw new Error('Nog niet compleet: '+[...miss,...bad].map(x=>x.label).join('; '));o.confirmedAt=Date.now();await setStatus(o,'klaar','Order bevestigd in het gesprek met Claude.'+(warn.length?' Waarschuwingen gecontroleerd: '+warn.join(' | '):''));return o.status},
+ async offerte(nr,bij){const o=this.vind(nr);if(bij)o.offerteBij=bij;o.levering='dealer';if(o.status!=='concept')return o.status;const {miss,bad,warn}=orderCheck(o);if(miss.length||bad.length)throw new Error('Nog niet compleet: '+[...miss,...bad].map(x=>x.label).join('; '));o.offerteAt=Date.now();await setStatus(o,'offerte',`Offerte gemaakt ${o.offerteBij==='showroom'?'in de showroom':'aan huis'}. Wacht op akkoord van de klant.`+(warn.length?' Waarschuwingen gecontroleerd: '+warn.join(' | '):''));return o.status},
+ async akkoord(nr){const o=this.vind(nr);if(o.status!=='offerte')throw new Error(`Status is "${stLabel(o.status)}"; akkoord kan alleen na de offerte.`);o.acceptedAt=Date.now();o.confirmedAt=o.acceptedAt;await setStatus(o,'klaar',`Klant akkoord met de offerte (${eur(orderTotal(o))} incl. btw). Klaar om door te geven aan de leverancier.`);return o.status},
  opdracht(nr){const o=this.vind(nr);sel=o.id;if(!o.opdracht||!['verwerking'].includes(o.status))return opdrachtOpenen(o);return (SUPPLIERS.find(s=>s[0]===o.leverancier)||SUPPLIERS[0])[2]+'#/order-entry'},
  items(nr){return opdrachtItems(this.vind(nr)).map(x=>({key:x.key,groep:x.groep,label:x.label,waarde:x.waarde,st:x.st}))},
  _zet(nr,keys,st,info){const o=this.vind(nr);o.opdracht=o.opdracht||{start:Date.now(),st:{}};(Array.isArray(keys)?keys:[keys]).forEach(k=>o.opdracht.st[k]={st,info:info||'',at:Date.now()});markDirty(o);renderOrder();return opdrachtTeller(o)},
@@ -740,7 +747,7 @@ function schemaTekst(){
   return `${P.id} (${P.name})${P.w?`: breedte ${P.w[0]}-${P.w[1]} mm, gekoppeld max 7000; uitval ${P.u.join('/')}`:''}\n`+f.map(f=>`  - ${f.id}: ${f.l}${f.req?' (verplicht)':''} [${f.type==='sel'||f.type==='radio'?'keuze: '+f.o.map(o=>o[0]+'='+o[1]).join('; '):f.type==='color'?'kleur: RAL xxxx of structuurlak zoals 7016-SL / 9006-SM':f.type==='check'?'ja/nee':f.type==='mm'?'getal in mm':f.type==='num'?'getal':'tekst'}]${f.def!==undefined?' standaard='+f.def:''}`).join('\n')}).join('\n');
 }
 function orderVoorAI(o){if(!o)return 'Er is geen order geopend.';const {miss,bad,warn}=orderCheck(o);
- return JSON.stringify({nr:o.nr,status:o.status,klant:o.klant,ref:o.ref,levering:o.levering,adres:o.adres,leverweek:o.leverweek,opmerking:o.opmerking,
+ return JSON.stringify({nr:o.nr,status:o.status,klant:o.klant,ref:o.ref,offerte_gemaakt:o.offerteBij||'',levering:'altijd bij de winkel',adres:o.adres,leverweek:o.leverweek,opmerking:o.opmerking,
   regels:(o.lines||[]).map((l,i)=>({regel:i+1,productId:l.productId,aantal:l.aantal,waarden:l.values,omschrijving:cfgName(PROD(l.productId),l.values||{}),prijs:PROD(l.productId)?unitPrice(PROD(l.productId),l.values||{})*(+l.aantal||1):0})),
   totaal_incl_btw:orderTotal(o),levertijd:levertijdTxt(o.leverweek),nog_in_te_vullen:miss.map(x=>x.label),klopt_niet:bad.map(x=>x.label),waarschuwingen:warn,leveranciersportaal:o.supplier,laatste_notities:(o.notes||[]).slice(-5).map(n=>`${n.from} (${n.kind}): ${n.text}`)})}
 
@@ -748,11 +755,12 @@ const AI_TOOLS=[
  {name:'nieuwe_order',description:'Maakt een nieuwe lege order aan en opent die. Gebruik dit als de gebruiker een nieuwe order inspreekt en de geopende order niet leeg is of al verder is dan concept.',input_schema:{type:'object',properties:{}}},
  {name:'open_order',description:'Opent een bestaande order op nummer (bijv. HUB-0003).',input_schema:{type:'object',properties:{nr:{type:'string'}},required:['nr']}},
  {name:'zet_klant',description:'Vult klantgegevens in (alleen de velden die je meegeeft). Postcode als 1234 AB.',input_schema:{type:'object',properties:{naam:{type:'string'},straat:{type:'string'},nr:{type:'string'},pc:{type:'string'},plaats:{type:'string'},tel:{type:'string'},mail:{type:'string'}}}},
- {name:'zet_order',description:'Vult ordergegevens in. levering: dealer (winkel), klant of afhalen. leverweek: ISO-week zoals 2026-W46, of "vroegst" voor de vroegst mogelijke week. adres alleen als het afwijkt van winkel/klantadres.',input_schema:{type:'object',properties:{ref:{type:'string'},levering:{type:'string',enum:['dealer','klant','afhalen']},leverweek:{type:'string'},opmerking:{type:'string'},adres:{type:'object',properties:{straat:{type:'string'},nr:{type:'string'},pc:{type:'string'},plaats:{type:'string'}}}}}},
+ {name:'zet_order',description:'Vult ordergegevens in. Levering is altijd bij de winkel. offerteBij: huis (offerte aan huis) of showroom. leverweek: ISO-week zoals 2026-W46, of "vroegst" voor de vroegst mogelijke week. adres alleen als het afwijkt van winkel/klantadres.',input_schema:{type:'object',properties:{ref:{type:'string'},offerteBij:{type:'string',enum:['huis','showroom']},leverweek:{type:'string'},opmerking:{type:'string'},adres:{type:'object',properties:{straat:{type:'string'},nr:{type:'string'},pc:{type:'string'},plaats:{type:'string'}}}}}},
  {name:'zet_regel',description:'Maakt of wijzigt een orderregel. regel = nummer (1 = eerste); laat weg of geef een nieuw nummer voor een nieuwe regel. waarden gebruikt de veld-id\'s en keuzecodes uit het schema; alleen meegegeven velden worden aangepast.',input_schema:{type:'object',properties:{regel:{type:'integer'},productId:{type:'string',enum:PRODUCTS.map(p=>p.id)},aantal:{type:'integer'},waarden:{type:'object'}}}},
  {name:'verwijder_regel',description:'Verwijdert een orderregel.',input_schema:{type:'object',properties:{regel:{type:'integer'}},required:['regel']}},
  {name:'controleer',description:'Geeft de actuele order terug met wat nog ontbreekt, wat niet klopt, waarschuwingen, prijs en levertijd.',input_schema:{type:'object',properties:{}}},
- {name:'klaarzetten',description:'Bevestigt de order en zet hem klaar voor de leverancier. Alleen aanroepen nadat je de samenvatting met prijs en levertijd hebt voorgelezen en de gebruiker daarna expliciet ja heeft gezegd. Bij waarschuwingen: ook bevestigd_waarschuwingen=true, alleen als de gebruiker ze heeft gehoord en akkoord is.',input_schema:{type:'object',properties:{bevestigd_waarschuwingen:{type:'boolean'}}}},
+ {name:'klaarzetten',description:'Legt de offerte vast (status Offerte bij klant). Alleen nadat je de samenvatting met prijs en levertijd hebt voorgelezen en de gebruiker ja zei. Bij waarschuwingen ook bevestigd_waarschuwingen=true.',input_schema:{type:'object',properties:{bevestigd_waarschuwingen:{type:'boolean'}}}},
+ {name:'klant_akkoord',description:'Legt vast dat de klant akkoord is met de offerte (status Akkoord klant). Alleen als de gebruiker zegt dat de klant akkoord is.',input_schema:{type:'object',properties:{}}},
  {name:'robot_starten',description:'Start de robot op GitHub die de order in het leveranciersportaal invult (actie invullen, status moet klaar of probleem zijn) of definitief bestelt (actie bestellen, status moet ingevuld zijn). Alleen na expliciete toestemming van de gebruiker; bestellen alleen als de gebruiker letterlijk om bestellen vraagt.',input_schema:{type:'object',properties:{actie:{type:'string',enum:['invullen','bestellen']}},required:['actie']}},
  {name:'vernieuw',description:'Haalt de nieuwste stand van de order op uit GitHub (bijvoorbeeld om te zien of de robot klaar is).',input_schema:{type:'object',properties:{}}},
 ];
@@ -767,7 +775,9 @@ WERKWIJZE
 - Zet alles wat de gebruiker noemt meteen in de order (zet_klant, zet_order, zet_regel). Vertaal gewone taal naar de codes: "1 meter 80" = 1800, "motor met afstandsbediening" = bed io met zender situo, "motor op een schakelaar" = bed wt, "links" = zijde L, "antraciet structuur" = 7016-SL, "Sattler Lumera" = arcoll sat-lum enz.
 - Verzin niets. Ontbreekt iets verplichts, vraag er dan naar, kort en gebundeld. Bij twijfel (bijv. "wit" zonder code) vraag je wat er bedoeld wordt.
 - Kan iets niet (te breed, uitval niet leverbaar, combinatie niet toegestaan): leg het uit en geef de mogelijkheden, maar kies niet zelf.
-- Als alles is ingevuld: lees een korte samenvatting voor met wat er besteld wordt, de prijs, de levertijd en eventuele waarschuwingen, en vraag: "Zal ik hem klaarzetten?". Pas na een duidelijk ja: klaarzetten.
+- De gebruiker is lid van Ambiance en bestelt bij de leverancier. Levering is altijd bij de winkel. Vraag of de offerte aan huis of in de showroom is gemaakt (offerteBij) als dat niet gezegd is.
+- Als alles is ingevuld: lees een korte samenvatting voor met wat er besteld wordt, de prijs, de levertijd en eventuele waarschuwingen, en vraag: "Zal ik de offerte vastleggen?". Pas na een duidelijk ja: klaarzetten (dat legt de offerte vast).
+- Pas als de gebruiker zegt dat de klant akkoord is: klant_akkoord. Vraag daarna of de order aan de leverancier doorgegeven mag worden.
 - Vraag daarna of de robot hem bij de leverancier mag invullen; start alleen na ja. Bestellen alleen als de gebruiker daar expliciet om vraagt en bevestigt.
 - Je antwoorden worden vaak voorgelezen: schrijf kort en spreekbaar Nederlands, maximaal drie zinnen, geen opsommingstekens, geen codes als het niet hoeft, bedragen als "vierduizend negenhonderdtachtig euro" of "€ 4.980".`}
 
@@ -779,7 +789,7 @@ async function aiExec(name,inp){
   case 'zet_klant':{const t=need();t.klant={...t.klant};for(const k of ['naam','straat','nr','pc','plaats','tel','mail'])if(inp[k]!=null)t.klant[k]=k==='pc'&&PC.test(inp[k])?normPc(inp[k]):String(inp[k]).trim();if(t.levering==='klant')t.adres={straat:t.klant.straat,nr:t.klant.nr,pc:t.klant.pc,plaats:t.klant.plaats};break}
   case 'zet_order':{const t=need();if(inp.ref!=null)t.ref=String(inp.ref);if(inp.opmerking!=null)t.opmerking=String(inp.opmerking).slice(0,300);
    if(inp.leverweek){const w=String(inp.leverweek).toLowerCase().startsWith('vroeg')?minWeek():String(inp.leverweek);if(!/^\d{4}-W\d{2}$/.test(w))throw new Error('Leverweek moet de vorm 2026-W46 hebben.');t.leverweek=w}
-   if(inp.levering){t.levering=inp.levering;t.adres=inp.levering==='dealer'?{...settings.winkel}:inp.levering==='klant'?{straat:t.klant.straat,nr:t.klant.nr,pc:t.klant.pc,plaats:t.klant.plaats}:null}
+   if(inp.offerteBij)t.offerteBij=inp.offerteBij;if(inp.levering){t.levering='dealer';t.adres=inp.levering==='dealer'?{...settings.winkel}:inp.levering==='klant'?{straat:t.klant.straat,nr:t.klant.nr,pc:t.klant.pc,plaats:t.klant.plaats}:null}
    if(inp.adres&&t.levering!=='afhalen')t.adres={...(t.adres||{}),...inp.adres,pc:inp.adres.pc?normPc(inp.adres.pc):(t.adres||{}).pc};break}
   case 'zet_regel':{const t=need();let i=inp.regel?inp.regel-1:t.lines.length;
    if(!inp.regel){const j=t.lines.findIndex(l=>JSON.stringify(l.values)===JSON.stringify(newLine(l.productId).values));if(j>=0)i=j} // lege standaardregel hergebruiken
@@ -801,8 +811,9 @@ async function aiExec(name,inp){
    if(miss.length||bad.length)throw new Error('Nog niet compleet: '+[...miss,...bad].map(x=>x.label).join('; '));
    if(!JA.test(lastUser))throw new Error('De gebruiker heeft nog geen ja gezegd. Lees de samenvatting met prijs en levertijd voor en vraag om bevestiging.');
    if(warn.length&&!inp.bevestigd_waarschuwingen)throw new Error('Er zijn waarschuwingen. Lees ze voor en vraag of de gebruiker toch door wil.');
-   t.confirmedAt=Date.now();const ok=await setStatus(t,'klaar','Order bevestigd en klaargezet via de Claude-assistent (spraak/chat).'+(warn.length?' Waarschuwingen gecontroleerd: '+warn.join(' | '):''));
+   t.offerteAt=Date.now();const ok=await setStatus(t,'offerte',`Offerte gemaakt ${t.offerteBij==='showroom'?'in de showroom':'aan huis'} via de Claude-assistent. Wacht op akkoord van de klant.`+(warn.length?' Waarschuwingen gecontroleerd: '+warn.join(' | '):''));
    if(!ok&&online())throw new Error('Opslaan in GitHub mislukte.');return orderVoorAI(cur())}
+  case 'klant_akkoord':{if(!o)throw new Error('Geen order geopend.');await hub.akkoord(o.nr);return orderVoorAI(cur())}
   case 'robot_starten':{if(!o)throw new Error('Geen order geopend.');const a=inp.actie;
    if(!online())throw new Error('De hub is niet gekoppeld aan GitHub, dus de robot kan niet starten. Koppel via Instellingen.');
    if(!JA.test(lastUser)&&!(a==='invullen'&&/robot|invullen/i.test(lastUser)))throw new Error('Vraag eerst toestemming aan de gebruiker.');
@@ -847,7 +858,7 @@ function trimChat(){
  // houd het gesprek kort: oude orderstanden inkorten en maximaal ~30 berichten
  chat.forEach((m,i)=>{if(i<chat.length-4&&typeof m.content==='string')m.content=m.content.replace(/\n\n\[Actuele order in de hub: [\s\S]*\]$/,'');if(i<chat.length-4&&Array.isArray(m.content))m.content.forEach(c=>{if(c.type==='tool_result'&&typeof c.content==='string'&&c.content.length>400)c.content=c.content.slice(0,200)+' …'})});
  while(chat.length>30){const i=chat.findIndex((m,j)=>j>0&&m.role==='user'&&typeof m.content==='string');if(i<=0)break;chat=chat.slice(i)}}
-const TOOLNL={nieuwe_order:'Nieuwe order',open_order:'Order geopend',zet_klant:'Klant ingevuld',zet_order:'Ordergegevens ingevuld',zet_regel:'Regel ingevuld',verwijder_regel:'Regel verwijderd',controleer:'Gecontroleerd',klaarzetten:'Klaargezet',robot_starten:'Robot gestart',vernieuw:'Vernieuwd'};
+const TOOLNL={nieuwe_order:'Nieuwe order',open_order:'Order geopend',zet_klant:'Klant ingevuld',zet_order:'Ordergegevens ingevuld',zet_regel:'Regel ingevuld',verwijder_regel:'Regel verwijderd',controleer:'Gecontroleerd',klaarzetten:'Offerte vastgelegd',klant_akkoord:'Akkoord klant',robot_starten:'Robot gestart',vernieuw:'Vernieuwd'};
 function tick(name,err){const l=$('#cw-log');const d=document.createElement('div');d.className='cw-tick'+(err?' bad':'');d.textContent=(err?'Niet gelukt: ':'')+(TOOLNL[name]||name);l.appendChild(d);l.scrollTop=l.scrollHeight}
 function bubble(kind,text,thinking){const l=$('#cw-log');const d=document.createElement('div');d.className='cw-msg cw-'+kind;d.innerHTML=`<p></p>`;d.querySelector('p').textContent=text;if(thinking)d.classList.add('thinking');l.appendChild(d);l.scrollTop=l.scrollHeight;return d}
 
