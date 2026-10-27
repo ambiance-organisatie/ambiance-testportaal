@@ -212,8 +212,10 @@ footer.foot .flogo{width:40px;height:40px}
 .opd-conf p{margin:4px 0 6px}
 
 /* aanleveren */
-.tabs4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
-@media (max-width:560px){.tabs4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.tabs4{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+@media (max-width:700px){.tabs4{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:460px){.tabs4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.pdfs{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}.pdfchip{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:6px;padding:6px 8px;font-size:13px;background:var(--surface)}.pdfchip b{font-size:11px;background:var(--err);color:#fff;border-radius:3px;padding:1px 5px;letter-spacing:.04em}
 .tabs4 label{border:1px solid var(--line);border-radius:6px;padding:8px;cursor:pointer;font-size:13.5px;display:flex;flex-direction:column;gap:2px;background:var(--surface)}
 .tabs4 label small{color:var(--mute);font-size:12px}
 .tabs4 input{position:absolute;opacity:0;pointer-events:none}
@@ -779,7 +781,7 @@ window.hub={
 laadLokaal();
 
 /* ================= Aanleveren (4 manieren) en Openstaande orders ================= */
-const BRON={wp:'Screenshot Winning Proposal',tribe:'Screenshot Tribe',spraak:'Spraakbericht',tekst:'Tekst'};
+const BRON={pdf:'PDF Winning Proposal',wp:'Screenshot Winning Proposal',tribe:'Screenshot Tribe',spraak:'Spraakbericht',tekst:'Tekst'};
 async function verklein(file){
  const bmp=await createImageBitmap(file);const m=1600,k=Math.min(1,m/Math.max(bmp.width,bmp.height));
  const c=document.createElement('canvas');c.width=Math.round(bmp.width*k);c.height=Math.round(bmp.height*k);c.getContext('2d').drawImage(bmp,0,0,c.width,c.height);return c.toDataURL('image/jpeg',.82)}
@@ -792,39 +794,46 @@ function verwijderFlow(o){
   try{await deleteOrder(o)}catch(e){toast(ghFout(e),1);return false}
   orders=orders.filter(x=>x!==o);dirty.delete(o.id);if(sel===o.id)sel=null;bewaarLokaal();renderList();renderOrder();toast(`${o.nr} verwijderd.`);return true})}
 function intakeModal(){
- let soort='wp',beelden=[],rec2=null;
+ let soort='pdf',beelden=[],pdfs=[],rec2=null;
  confirmModal('Order aanleveren',`<p style="margin:0;font-size:14px">De klant is akkoord en de offerte staat in Winning Proposal of Tribe. Lever de order aan op de manier die voor jou het makkelijkst is. Claude zet hem in de hub en controleert hem.</p>
  <div class="tabs4" role="radiogroup" aria-label="Manier van aanleveren">
-  <label><input type="radio" name="soort" value="wp" checked><b>Screenshot WP</b><small>Winning Proposal</small></label>
+  <label><input type="radio" name="soort" value="pdf" checked><b>PDF</b><small>Offerte uit WP</small></label>
+  <label><input type="radio" name="soort" value="wp"><b>Screenshot WP</b><small>Winning Proposal</small></label>
   <label><input type="radio" name="soort" value="tribe"><b>Screenshot Tribe</b><small>Order of offerte</small></label>
   <label><input type="radio" name="soort" value="spraak"><b>Spraakbericht</b><small>Inspreken</small></label>
   <label><input type="radio" name="soort" value="tekst"><b>Tekst</b><small>Typen of plakken</small></label>
  </div>
- <div id="in-beeld"><div class="drop" id="drop" tabindex="0" role="button">Sleep een screenshot hierheen, plak met Ctrl+V of <u>kies een bestand</u></div><input type="file" id="in-file" accept="image/*" multiple hidden><div class="thumbs" id="in-thumbs"></div></div>
+ <div id="in-beeld"><div class="drop" id="drop" tabindex="0" role="button">Sleep een bestand hierheen, plak met Ctrl+V of <u>kies een bestand</u></div><input type="file" id="in-file" accept="image/*,application/pdf" multiple hidden><div class="pdfs" id="in-pdfs"></div><div class="thumbs" id="in-thumbs"></div></div>
  <div id="in-spraak" hidden><div class="microw"><button type="button" class="btn mic" id="in-mic">● Start inspreken</button><span id="in-mic-s" style="font-size:13px;color:var(--mute)"></span></div></div>
  <div class="fld"><label for="in-txt" id="in-txt-l">Toelichting (optioneel)</label><textarea class="in" id="in-txt" rows="5" placeholder=""></textarea></div>
  <p class="em" id="in-err" style="margin:0;font-size:13px;color:var(--err)"></p>
  <p style="margin:0;font-size:12.5px;color:var(--mute)">Liever alles zelf invullen? <button type="button" class="lnk" id="in-leeg">Begin met een leeg formulier</button></p>`,'Order aanmaken',async()=>{
   const tekst=$('#in-txt').value.trim();
-  if((soort==='wp'||soort==='tribe')&&!beelden.length){$('#in-err').textContent='Voeg eerst een screenshot toe.';return false}
+  if((soort==='wp'||soort==='tribe')&&!beelden.length&&!pdfs.length){$('#in-err').textContent='Voeg eerst een screenshot toe.';return false}
+  if(soort==='pdf'&&!pdfs.length&&!beelden.length){$('#in-err').textContent='Voeg eerst de PDF van de offerte toe.';return false}
   if((soort==='spraak'||soort==='tekst')&&!tekst){$('#in-err').textContent=soort==='spraak'?'Spreek eerst de order in.':'Typ of plak eerst de order.';return false}
   rec2&&rec2.abort();
-  newOrder();const o=cur();o.bron={soort,tekst,beelden,at:Date.now()};
+  newOrder();const o=cur();o.bron={soort,tekst,beelden,pdfs,at:Date.now()};
   addNote(o,'info',`Order aangeleverd als ${BRON[soort].toLowerCase()}.`,'Ambiance');markDirty(o);renderList();renderOrder();
   if(ai.key){aiIntake(o)}else{addNote(o,'info','Wacht tot Claude de aangeleverde order uitleest. Vraag het in het gesprek met Claude, of vul een Claude-sleutel in bij de assistent.','Ambiance');renderOrder();toast(`${o.nr} aangemaakt. Claude leest hem uit zodra je het vraagt.`)}
   return true});
- const setSoort=v=>{soort=v;const b=v==='wp'||v==='tribe';$('#in-beeld').hidden=!b;$('#in-spraak').hidden=v!=='spraak';
+ const setSoort=v=>{soort=v;const b=v==='wp'||v==='tribe'||v==='pdf';$('#drop').innerHTML=v==='pdf'?'Sleep de PDF van de offerte hierheen of <u>kies een bestand</u>':'Sleep een screenshot hierheen, plak met Ctrl+V of <u>kies een bestand</u>';$('#in-beeld').hidden=!b;$('#in-spraak').hidden=v!=='spraak';
   $('#in-txt-l').textContent=b?'Toelichting (optioneel)':v==='spraak'?'Wat je inspreekt (je kunt het hier verbeteren)':'Order als tekst';
   $('#in-txt').placeholder=v==='tekst'?'Bijvoorbeeld: Fam. Jansen, Molenstraat 41 Udenhout, Carré 95 3500 x 1200, RAL 9001, acryl 8201 naadloos, io links met Situo, week 50':''};
  document.querySelectorAll('[name="soort"]').forEach(r=>r.onchange=()=>setSoort(r.value));
  const thumbs=()=>{$('#in-thumbs').innerHTML=beelden.map((d,i)=>`<figure><img src="${d}" alt="Screenshot ${i+1}"><button type="button" class="btn" data-rm="${i}" aria-label="Verwijder screenshot ${i+1}">×</button></figure>`).join('');
   document.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{beelden.splice(+b.dataset.rm,1);thumbs()})};
- const voegToe=async files=>{for(const f of files){if(!f.type.startsWith('image/'))continue;if(beelden.length>=4)break;try{beelden.push(await verklein(f))}catch(e){}}$('#in-err').textContent='';thumbs()};
+ const pdfList=()=>{$('#in-pdfs').innerHTML=pdfs.map((f,i)=>`<span class="pdfchip"><b>PDF</b>${esc(f.name)} <small style="color:var(--mute)">${Math.round(f.size/1024)} kB</small><button type="button" class="btn sm" data-rmp="${i}" aria-label="Verwijder ${esc(f.name)}">×</button></span>`).join('');document.querySelectorAll('[data-rmp]').forEach(b=>b.onclick=()=>{pdfs.splice(+b.dataset.rmp,1);pdfList()})};
+ const leesPdf=f=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(f)});
+ const voegToe=async files=>{let fout='';for(const f of files){
+   if(f.type==='application/pdf'||/\.pdf$/i.test(f.name)){if(f.size>4*1024*1024){fout=`${f.name} is groter dan 4 MB. Exporteer de offerte kleiner of maak een screenshot.`;continue}if(pdfs.length>=2){fout='Maximaal 2 PDF\'s per order.';continue}try{const d=await leesPdf(f);pdfs.push({name:f.name,size:f.size,data:d.replace(/^data:[^;]*;/,'data:application/pdf;')})}catch(e){fout='Dit bestand kon niet worden gelezen.'}continue}
+   if(!f.type.startsWith('image/'))continue;if(beelden.length>=4)break;try{beelden.push(await verklein(f))}catch(e){}}
+  $('#in-err').textContent=fout;thumbs();pdfList()};
  const drop=$('#drop');drop.onclick=()=>$('#in-file').click();drop.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();$('#in-file').click()}};
  $('#in-file').onchange=e=>voegToe([...e.target.files]);
  drop.ondragover=e=>{e.preventDefault();drop.classList.add('over')};drop.ondragleave=()=>drop.classList.remove('over');
  drop.ondrop=e=>{e.preventDefault();drop.classList.remove('over');voegToe([...e.dataTransfer.files])};
- const onPaste=e=>{const fs=[...(e.clipboardData?.files||[])].filter(f=>f.type.startsWith('image/'));if(fs.length){e.preventDefault();if(soort!=='wp'&&soort!=='tribe'){document.querySelector('[name="soort"][value="wp"]').checked=true;setSoort('wp')}voegToe(fs)}};
+ const onPaste=e=>{const fs=[...(e.clipboardData?.files||[])].filter(f=>f.type.startsWith('image/'));if(fs.length){e.preventDefault();if(soort!=='wp'&&soort!=='tribe'&&soort!=='pdf'){document.querySelector('[name="soort"][value="wp"]').checked=true;setSoort('wp')}voegToe(fs)}};
  document.addEventListener('paste',onPaste);
  const mo=new MutationObserver(()=>{if(!document.body.contains(drop)){document.removeEventListener('paste',onPaste);rec2&&rec2.abort();mo.disconnect()}});mo.observe(document.body,{childList:true,subtree:true});
  $('#in-mic').onclick=()=>{const SRc=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SRc){$('#in-mic-s').textContent='Spraak werkt in deze browser niet. Gebruik Chrome of Edge, of typ de order.';return}
@@ -834,15 +843,15 @@ function intakeModal(){
   rec2.onend=()=>{rec2=null;$('#in-mic').classList.remove('on');$('#in-mic').textContent='● Start inspreken';$('#in-mic-s').textContent=''};
   try{rec2.start();$('#in-mic').classList.add('on');$('#in-mic').textContent='■ Stop';$('#in-mic-s').textContent='Luistert… spreek de order in.'}catch(e){rec2=null}};
  $('#in-leeg').onclick=()=>{rec2&&rec2.abort();document.querySelector('#modal-root .x, #modal-root [data-close]')?.click();$('#modal-root').innerHTML='';newOrder()};
- setSoort('wp');
+ setSoort('pdf');
 }
 function aiIntake(o){
  sel=o.id;renderList();renderOrder();
  if($('#cw').hidden)$('#cw-fab').click();
  const msg=`Nieuwe order aangeleverd als ${BRON[o.bron.soort].toLowerCase()}. Lees de bron en vul order ${o.nr} in met zet_klant, zet_order en zet_regel (geen nieuwe_order). Noem daarna kort wat ontbreekt of niet klopt.`+(o.bron.tekst?`\n\n${o.bron.soort==='spraak'?'Transcriptie':'Tekst'}:\n${o.bron.tekst}`:'');
- aiSend(msg,o.bron.beelden,`${BRON[o.bron.soort]} voor ${o.nr} uitlezen`)}
+ aiSend(msg,[...(o.bron.beelden||[]),...(o.bron.pdfs||[]).map(f=>f.data)],`${BRON[o.bron.soort]} voor ${o.nr} uitlezen`)}
 function bronHTML(o){if(!o.bron)return '';const b=o.bron;
- return `<div class="bron" id="bron"><h3>Aangeleverd als ${esc(BRON[b.soort]||b.soort)}</h3>${(b.beelden||[]).length?`<div class="thumbs">${b.beelden.map((d,i)=>`<img src="${d}" alt="Aangeleverde screenshot ${i+1}" data-zoom="${i}">`).join('')}</div>`:''}${b.tekst?`<p>${esc(b.tekst)}</p>`:''}
+ return `<div class="bron" id="bron"><h3>Aangeleverd als ${esc(BRON[b.soort]||b.soort)}</h3>${(b.pdfs||[]).length?`<div class="pdfs">${b.pdfs.map((f,i)=>`<span class="pdfchip"><b>PDF</b>${esc(f.name)}<button type="button" class="btn sm" data-openpdf="${i}">Openen</button></span>`).join('')}</div>`:''}${(b.beelden||[]).length?`<div class="thumbs">${b.beelden.map((d,i)=>`<img src="${d}" alt="Aangeleverde screenshot ${i+1}" data-zoom="${i}">`).join('')}</div>`:''}${b.tekst?`<p>${esc(b.tekst)}</p>`:''}
  ${o.status==='concept'?`<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn sm" id="bron-ai">${ai.key?'Claude opnieuw laten uitlezen':'Laten uitlezen door Claude'}</button></div>`:''}</div>`}
 function nextStep(o){const f=fase(o),c=orderCheck(o);
  switch(f){case 'ontbreekt':return `Aanvullen: ${c.miss[0].label}${c.miss.length>1?` (+${c.miss.length-1})`:''}`;
@@ -870,6 +879,7 @@ const _renderOrder=renderOrder;renderOrder=function(){
  _renderOrder();
  if(o.bron){const col=$('#op .two > div');col&&col.insertAdjacentHTML('afterbegin',bronHTML(o));
   $('#bron-ai')&&($('#bron-ai').onclick=()=>{if(!ai.key){toast('Vraag het in het gesprek met Claude, of vul een Claude-sleutel in bij de assistent (Sleutel).',1);return}aiIntake(o)});
+  document.querySelectorAll('#bron [data-openpdf]').forEach(btn=>btn.onclick=()=>{const f=o.bron.pdfs[+btn.dataset.openpdf];const bin=atob(f.data.split(',')[1]);const u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);window.open(URL.createObjectURL(new Blob([u8],{type:'application/pdf'})),'_blank')});
   document.querySelectorAll('#bron [data-zoom]').forEach(img=>img.onclick=()=>confirmModal('Aangeleverde screenshot',`<img src="${img.src}" alt="" style="max-width:100%;border-radius:4px">`,'Sluiten',()=>true))}
 };
 // oude statussen omzetten
@@ -920,7 +930,7 @@ WERKWIJZE
 - Verzin niets. Ontbreekt iets verplichts, vraag er dan naar, kort en gebundeld. Bij twijfel (bijv. "wit" zonder code) vraag je wat er bedoeld wordt.
 - Kan iets niet (te breed, uitval niet leverbaar, combinatie niet toegestaan): leg het uit en geef de mogelijkheden, maar kies niet zelf.
 - De gebruiker is lid van Ambiance en bestelt bij de leverancier. De klant is al akkoord met de offerte (gemaakt in Winning Proposal, ook in Tribe). Levering is altijd bij de winkel.
-- De order kan binnenkomen als screenshot van Winning Proposal of Tribe, als spraakbericht of als tekst. Lees alles wat zichtbaar is over (klant, referentie, product, maten, kleur, doek, bediening, opties, leverweek) en zet het in de geopende order. Verzin niets wat niet te lezen is.
+- De order kan binnenkomen als PDF van Winning Proposal, als screenshot van Winning Proposal of Tribe, als spraakbericht of als tekst. Bij een PDF van Winning Proposal: lees de regels, maten en opties uit de offerte. Lees alles wat zichtbaar is over (klant, referentie, product, maten, kleur, doek, bediening, opties, leverweek) en zet het in de geopende order. Verzin niets wat niet te lezen is.
 - Als alles is ingevuld: lees het totaaloverzicht voor (wat er besteld wordt, prijs, levertijd, waarschuwingen) en vraag: "Zal ik het goedkeuren?". Pas na een duidelijk ja: klaarzetten (dat keurt het goed).
 - Vraag daarna of de robot hem bij de leverancier mag invullen; start alleen na ja. Bestellen alleen als de gebruiker daar expliciet om vraagt en bevestigt.
 - Je antwoorden worden vaak voorgelezen: schrijf kort en spreekbaar Nederlands, maximaal drie zinnen, geen opsommingstekens, geen codes als het niet hoeft, bedragen als "vierduizend negenhonderdtachtig euro" of "€ 4.980".`}
@@ -983,7 +993,7 @@ async function aiSend(text,imgs,shown){
  text=String(text||'').trim();if(!text||aiBusy)return;
  lastUser=text;aiBusy=true;aiCtl=new AbortController();bubble('user',shown||text);const think=bubble('ai','…',true);setMic(false);
  const ctx=`\n\n[Actuele order in de hub: ${orderVoorAI(cur())}]`;
- chat.push({role:'user',content:imgs&&imgs.length?[...imgs.map(d=>({type:'image',source:{type:'base64',media_type:d.slice(5,d.indexOf(';')),data:d.split(',')[1]}})),{type:'text',text:text+ctx}]:text+ctx});
+ chat.push({role:'user',content:imgs&&imgs.length?[...imgs.map(d=>d.startsWith('data:application/pdf')?{type:'document',source:{type:'base64',media_type:'application/pdf',data:d.split(',')[1]}}:{type:'image',source:{type:'base64',media_type:d.slice(5,d.indexOf(';')),data:d.split(',')[1]}}),{type:'text',text:text+ctx}]:text+ctx});
  try{
   for(let r=0;r<10;r++){
    const res=await aiCall(chat);chat.push({role:'assistant',content:res.content});
@@ -999,7 +1009,7 @@ async function aiSend(text,imgs,shown){
 }
 function trimChat(){
  // houd het gesprek kort: oude orderstanden inkorten en maximaal ~30 berichten
- chat.forEach((m,i)=>{if(i<chat.length-4&&typeof m.content==='string')m.content=m.content.replace(/\n\n\[Actuele order in de hub: [\s\S]*\]$/,'');if(i<chat.length-4&&Array.isArray(m.content)){m.content=m.content.map(c=>c.type==='image'?{type:'text',text:'[afbeelding van de aangeleverde order]'}:c)}if(i<chat.length-4&&Array.isArray(m.content))m.content.forEach(c=>{if(c.type==='tool_result'&&typeof c.content==='string'&&c.content.length>400)c.content=c.content.slice(0,200)+' …'})});
+ chat.forEach((m,i)=>{if(i<chat.length-4&&typeof m.content==='string')m.content=m.content.replace(/\n\n\[Actuele order in de hub: [\s\S]*\]$/,'');if(i<chat.length-4&&Array.isArray(m.content)){m.content=m.content.map(c=>c.type==='image'||c.type==='document'?{type:'text',text:c.type==='image'?'[afbeelding van de aangeleverde order]':'[PDF van de aangeleverde order]'}:c)}if(i<chat.length-4&&Array.isArray(m.content))m.content.forEach(c=>{if(c.type==='tool_result'&&typeof c.content==='string'&&c.content.length>400)c.content=c.content.slice(0,200)+' …'})});
  while(chat.length>30){const i=chat.findIndex((m,j)=>j>0&&m.role==='user'&&typeof m.content==='string');if(i<=0)break;chat=chat.slice(i)}}
 const TOOLNL={nieuwe_order:'Nieuwe order',open_order:'Order geopend',zet_klant:'Klant ingevuld',zet_order:'Ordergegevens ingevuld',zet_regel:'Regel ingevuld',verwijder_regel:'Regel verwijderd',controleer:'Gecontroleerd',klaarzetten:'Goedgekeurd',robot_starten:'Robot gestart',vernieuw:'Vernieuwd'};
 function tick(name,err){const l=$('#cw-log');const d=document.createElement('div');d.className='cw-tick'+(err?' bad':'');d.textContent=(err?'Niet gelukt: ':'')+(TOOLNL[name]||name);l.appendChild(d);l.scrollTop=l.scrollHeight}
