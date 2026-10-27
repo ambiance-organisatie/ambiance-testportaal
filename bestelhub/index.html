@@ -242,6 +242,7 @@ footer.foot .flogo{width:40px;height:40px}
 .dtbl td{padding:10px;border-bottom:1px solid var(--line);vertical-align:top}
 .dtbl tr[data-oid]{cursor:pointer}.dtbl tr[data-oid]:hover td{background:var(--surface-2)}
 .dtbl td small{display:block;color:var(--mute);font-size:12.5px}
+.dtbl .del-row{padding:2px 7px;opacity:.6}.dtbl tr:hover .del-row,.dtbl .del-row:focus-visible{opacity:1}.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 .dtbl .nx{color:var(--orange-dk);font-weight:500}
 .dtbl .mono{font-family:ui-monospace,Menlo,monospace;font-size:13px;white-space:nowrap}
 </style>
@@ -549,7 +550,7 @@ function renderOrder(){
  const idx=STATUS.findIndex(s=>s[0]===o.status);
  main.innerHTML=`<section class="panel ${ro?'ro':''}" id="op">
  <div class="ohead"><h1>${esc(o.nr)}</h1><span class="chip st-${esc(fase(o))}">${esc(faseLabel(fase(o)))}</span><span class="sp"></span>
-  ${o.status==='concept'?`<button class="btn sm" type="button" id="save">Opslaan</button><button class="btn danger sm" type="button" id="del-order">Order verwijderen</button>`:(o.status!=='verwerking'&&o.status!=='besteld'?`<button class="btn sm" type="button" id="to-concept">Terug naar concept</button>`:'')}</div>
+  ${o.status==='concept'?`<button class="btn sm" type="button" id="save">Opslaan</button>`:(o.status!=='verwerking'&&o.status!=='besteld'?`<button class="btn sm" type="button" id="to-concept">Terug naar concept</button>`:'')}<button class="btn danger sm" type="button" id="del-order">Order verwijderen</button></div>
  <ol class="flow" aria-label="Voortgang">${STATUS.slice(0,5).map((s,i)=>`<li class="${s[0]===o.status?'on':(o.status!=='probleem'&&i<idx)?'done':''}">${esc(s[1])}</li>`).join('')}</ol>
  <div class="two" style="padding:0 16px 16px"><div style="min-width:0;display:grid;gap:16px">
  <div class="box"><h3>Klant en levering</h3><div class="grid">
@@ -602,7 +603,7 @@ function bindOrder(){
   if(d){o.lines.splice(+d.dataset.del,1);rerenderLines();changed();return}
   if(u){const i=+u.dataset.dup;o.lines.splice(i+1,0,JSON.parse(JSON.stringify(o.lines[i])));rerenderLines();changed();toast(`Regel ${i+1} gedupliceerd.`);return}});
  $('#add-line')&&($('#add-line').onclick=()=>{const o=cur();const last=o.lines[o.lines.length-1];o.lines.push(newLine(last?last.productId:'carre110'));rerenderLines();changed();$(`#line-${o.lines.length-1}`).scrollIntoView({block:'center',behavior:'smooth'})});
- $('#del-order')&&($('#del-order').onclick=()=>confirmModal('Order verwijderen',`<p style="margin:0">${esc(o.nr)} en de notities worden verwijderd.</p>`,'Verwijderen',async()=>{try{await deleteOrder(o)}catch(e){toast(ghFout(e),1);return}orders=orders.filter(x=>x!==o);dirty.delete(o.id);sel=null;renderList();renderOrder();toast('Order verwijderd.')}));
+ $('#del-order')&&($('#del-order').onclick=()=>verwijderFlow(o));
  $('#to-concept')&&($('#to-concept').onclick=()=>confirmModal('Terug naar concept',`<p style="margin:0">Je kunt de order dan weer aanpassen. ${o.supplier?.offerte?`Let op: bij de leverancier staat al offerte ${esc(o.supplier.offerte)}. Die moet daarna worden bijgewerkt.`:''}</p>`,'Terug naar concept',()=>setStatus(o,'concept','Order teruggezet naar concept.')));
  $('#note-f').onsubmit=async e=>{e.preventDefault();const t=$('#note-t').value.trim();if(!t)return;if(o.status==='verwerking'){toast('De robot is bezig. Voeg de notitie toe als hij klaar is.',1);return}addNote(o,'info',t,'Ambiance');$('#note-t').value='';if(o.status==='concept'){markDirty(o)}else{await saveOrder(o,`Hub: notitie bij ${o.nr}`)}};
  $('#save')&&($('#save').onclick=async()=>{busy=true;renderDirty();const ok=await saveOrder(o,`Hub: ${o.nr} opgeslagen`);busy=false;renderDirty();if(ok)toast('Opgeslagen.')});
@@ -782,6 +783,14 @@ const BRON={wp:'Screenshot Winning Proposal',tribe:'Screenshot Tribe',spraak:'Sp
 async function verklein(file){
  const bmp=await createImageBitmap(file);const m=1600,k=Math.min(1,m/Math.max(bmp.width,bmp.height));
  const c=document.createElement('canvas');c.width=Math.round(bmp.width*k);c.height=Math.round(bmp.height*k);c.getContext('2d').drawImage(bmp,0,0,c.width,c.height);return c.toDataURL('image/jpeg',.82)}
+
+function verwijderFlow(o){
+ const lev=o.supplier?.order?`<p class="em" style="margin:8px 0 0;font-size:14px;color:var(--warn)">Let op: deze order is al besteld bij de leverancier als <b class="mono">${esc(o.supplier.order)}</b>. Die bestelling blijft daar gewoon staan; annuleren doe je bij de leverancier.</p>`
+  :o.supplier?.offerte?`<p class="em" style="margin:8px 0 0;font-size:14px;color:var(--warn)">Let op: bij de leverancier staat al offerte <b class="mono">${esc(o.supplier.offerte)}</b>. Die blijft daar staan; verwijder hem zo nodig zelf in het portaal.</p>`:'';
+ const bezig=o.status==='verwerking'?`<p class="em" style="margin:8px 0 0;font-size:14px;color:var(--err)">Het portaal wordt nu ingevuld. Verwijder de order liever als dat klaar is.</p>`:'';
+ confirmModal('Order verwijderen',`<p style="margin:0"><b>${esc(o.nr)}</b>${o.klant?.naam?` van ${esc(o.klant.naam)}`:''}${o.ref?` (${esc(o.ref)})`:''} wordt met alle notities en aangeleverde bestanden verwijderd. Dit kan niet ongedaan worden gemaakt.</p>${lev}${bezig}`,'Definitief verwijderen',async()=>{
+  try{await deleteOrder(o)}catch(e){toast(ghFout(e),1);return false}
+  orders=orders.filter(x=>x!==o);dirty.delete(o.id);if(sel===o.id)sel=null;bewaarLokaal();renderList();renderOrder();toast(`${o.nr} verwijderd.`);return true})}
 function intakeModal(){
  let soort='wp',beelden=[],rec2=null;
  confirmModal('Order aanleveren',`<p style="margin:0;font-size:14px">De klant is akkoord en de offerte staat in Winning Proposal of Tribe. Lever de order aan op de manier die voor jou het makkelijkst is. Claude zet hem in de hub en controleert hem.</p>
@@ -848,13 +857,14 @@ function dashHTML(){
  const rows=open.filter(o=>!dashF||fase(o)===dashF).sort((a,b)=>FASE.findIndex(x=>x[0]===fase(a))-FASE.findIndex(x=>x[0]===fase(b))||(b.updatedAt||0)-(a.updatedAt||0));
  return `<section class="panel dash"><div class="ohead"><h1>Openstaande orders</h1><span class="sp"></span><button class="btn pri" type="button" id="dash-new">Order aanleveren</button></div><div class="sec">
  <div class="chips" role="group" aria-label="Filter op status"><button type="button" class="all" data-f="" aria-pressed="${!dashF}">Alles <i>${open.length}</i></button>${FASE.map(([k,l])=>`<button type="button" class="chip st-${k}" data-f="${k}" aria-pressed="${dashF===k}">${l} <i>${cnt(k)}</i></button>`).join('')}</div>
- ${rows.length?`<div class="dtbl"><table><thead><tr><th>Order</th><th>Klant en referentie</th><th>Product</th><th>Status</th><th>Volgende stap</th></tr></thead><tbody>${rows.map(o=>`<tr data-oid="${esc(o.id)}" tabindex="0"><td class="mono">${esc(o.nr)}${o.bron?`<small>${esc(BRON[o.bron.soort])}</small>`:''}</td><td>${esc(o.klant?.naam||'Nog onbekend')}<small>${esc(o.ref||'geen referentie')}</small></td><td>${(o.lines||[]).map(l=>{const P=PROD(l.productId);return P?esc(cfgName(P,l.values||{})):''}).filter(Boolean).join('<br>')||'—'}</td><td><span class="chip st-${fase(o)}">${esc(faseLabel(fase(o)))}</span></td><td class="nx">${esc(nextStep(o))}</td></tr>`).join('')}</tbody></table></div>`
+ ${rows.length?`<div class="dtbl"><table><thead><tr><th>Order</th><th>Klant en referentie</th><th>Product</th><th>Status</th><th>Volgende stap</th><th><span class="sr">Acties</span></th></tr></thead><tbody>${rows.map(o=>`<tr data-oid="${esc(o.id)}" tabindex="0"><td class="mono">${esc(o.nr)}${o.bron?`<small>${esc(BRON[o.bron.soort])}</small>`:''}</td><td>${esc(o.klant?.naam||'Nog onbekend')}<small>${esc(o.ref||'geen referentie')}</small></td><td>${(o.lines||[]).map(l=>{const P=PROD(l.productId);return P?esc(cfgName(P,l.values||{})):''}).filter(Boolean).join('<br>')||'—'}</td><td><span class="chip st-${fase(o)}">${esc(faseLabel(fase(o)))}</span></td><td class="nx">${esc(nextStep(o))}</td><td><button type="button" class="btn sm del-row" data-del-oid="${esc(o.id)}" aria-label="${esc(o.nr)} verwijderen" title="Verwijderen"><svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-3 6h12l-1 12H7L6 9Zm4 2v8h2v-8h-2Zm4 0v8h2v-8h-2Z"/></svg></button></td></tr>`).join('')}</tbody></table></div>`
   :`<p style="margin:0;color:var(--mute)">${orders.length?'Geen orders met deze status.':'Nog geen orders. Lever je eerste order aan met een screenshot, spraakbericht of tekst.'}</p>`}
  </div></section>`}
 const _renderOrder=renderOrder;renderOrder=function(){
  const o=cur();
  if(!o){const m=$('#main');m.innerHTML=dashHTML();
   m.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{dashF=b.dataset.f;renderOrder()});
+  m.querySelectorAll('[data-del-oid]').forEach(b=>b.onclick=e=>{e.stopPropagation();const o=orders.find(x=>x.id===b.dataset.delOid);o&&verwijderFlow(o)});
   m.querySelectorAll('tr[data-oid]').forEach(r=>{const go=()=>{sel=r.dataset.oid;renderList();renderOrder()};r.onclick=go;r.onkeydown=e=>{if(e.key==='Enter')go()}});
   $('#dash-new').onclick=()=>intakeModal();return}
  _renderOrder();
